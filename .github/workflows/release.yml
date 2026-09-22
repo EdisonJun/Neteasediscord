@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  PYTHONUTF8: "1"  # runner 默认代码页是 cp1252，输出中文会报错
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pyinstaller
+
+      - name: Build exe
+        run: python build.py
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/NeteaseDiscordRPC.exe
+          generate_release_notes: true

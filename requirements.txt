@@ -1,0 +1,4 @@
+pycaw
+websocket-client
+pystray
+pillow
