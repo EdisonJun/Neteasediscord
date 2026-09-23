@@ -41,7 +41,7 @@ DEFAULT_CONFIG = {
     "cdp_port": 29222,  # 网易云的 --remote-debugging-port，0 表示不用
 }
 LYRIC_INTERVAL = 4  # 秒
-DOWNLOAD_URL = "https://github.com/EdisonJun/Neteasediscord/releases/latest"
+DOWNLOAD_URL = "https://edisonjun.github.io/Neteasediscord/"  # 插件介绍页 (GitHub Pages)
 
 log = logging.getLogger("netease-rpc")
 
