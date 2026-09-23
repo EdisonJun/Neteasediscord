@@ -25,13 +25,67 @@ def message_box(text, title=APP_NAME, flags=MB_OK | MB_ICONINFO):
 # 单实例
 # --------------------------------------------------------------------------
 _mutex = None
+QUIT_EVENT = "Local\\" + APP_NAME + ".quit"  # 新启动的副本用它通知正在运行的副本退出
+EVENT_MODIFY_STATE, SYNCHRONIZE = 0x0002, 0x00100000
+
+kernel32.CreateMutexW.restype = ctypes.c_void_p
+kernel32.CreateEventW.restype = ctypes.c_void_p
+kernel32.OpenEventW.restype = ctypes.c_void_p
+kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
+kernel32.SetEvent.argtypes = [ctypes.c_void_p]
+kernel32.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
 
 
 def acquire_single_instance():
     """已有实例在运行时返回 False"""
     global _mutex
-    _mutex = kernel32.CreateMutexW(None, False, "Local\\" + APP_NAME)
-    return ctypes.get_last_error() != 183  # ERROR_ALREADY_EXISTS
+    handle = kernel32.CreateMutexW(None, False, "Local\\" + APP_NAME)
+    if ctypes.get_last_error() == 183:  # ERROR_ALREADY_EXISTS
+        kernel32.CloseHandle(handle)
+        return False
+    _mutex = handle
+    return True
+
+
+def create_quit_event():
+    """正在运行的副本调用：返回一个事件句柄，被 set 时说明有新副本要接替"""
+    return kernel32.CreateEventW(None, True, False, QUIT_EVENT)
+
+
+def wait_quit_event(handle, timeout_ms):
+    return kernel32.WaitForSingleObject(handle, timeout_ms) == 0  # WAIT_OBJECT_0
+
+
+def _other_instances():
+    """其它正在运行的本程序 exe (按文件名 NeteaseDiscordRPC*.exe)，排除自己和 PyInstaller 的父/子进程"""
+    import psutil
+    me = psutil.Process()
+    mine = {me.pid, me.ppid()} | {c.pid for c in me.children(recursive=True)}
+    for p in psutil.process_iter(["pid", "name"]):
+        name = (p.info["name"] or "").lower()
+        if p.info["pid"] not in mine and name.startswith("neteasediscordrpc") and name.endswith(".exe"):
+            yield p
+
+
+def take_over_running_instance(timeout=10):
+    """让正在运行的副本退出，然后由当前进程接替。返回是否成功"""
+    import time
+    event = kernel32.OpenEventW(EVENT_MODIFY_STATE, False, QUIT_EVENT)
+    if event:  # 1.2.1 及以后的版本会监听这个事件并正常退出
+        kernel32.SetEvent(event)
+        kernel32.CloseHandle(event)
+    else:  # 更早的版本没有这个事件，只能结束进程 (Discord 状态会随之清除)
+        for p in _other_instances():
+            try:
+                p.terminate()
+            except Exception:
+                pass
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if acquire_single_instance():
+            return True
+        time.sleep(0.3)
+    return False
 
 
 # --------------------------------------------------------------------------

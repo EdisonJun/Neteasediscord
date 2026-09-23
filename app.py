@@ -209,6 +209,15 @@ class TrayApp:
                 self.icon.title = title
                 shown = (active, title)
 
+    def _wait_takeover(self):
+        """另一个副本 (通常是刚下载的新版本) 请求接替时，正常退出"""
+        event = system.create_quit_event()
+        while not self._stop.is_set():
+            if system.wait_quit_event(event, 1000):
+                log.info("新启动的副本接替了运行，本副本退出")
+                self._quit(self.icon, None)
+                return
+
     def _check_update(self):
         found = latest_release()
         if found and version_tuple(found[0]) > version_tuple(VERSION):
@@ -240,6 +249,7 @@ class TrayApp:
             icon.visible = True
             threading.Thread(target=self._run_presence, daemon=True).start()
             threading.Thread(target=self._watch, daemon=True).start()
+            threading.Thread(target=self._wait_takeover, daemon=True).start()
             if self.cfg.get("check_updates", True):
                 threading.Thread(target=self._check_update, daemon=True).start()
             self._first_run_tip()
@@ -259,8 +269,17 @@ def main():
         sys.exit(elevated_set_debug_port(None))
 
     if not system.acquire_single_instance():
-        system.message_box("网易云 Discord 状态已经在运行了，请查看右下角托盘图标。")
-        return
+        # 常见情况：下载了新版本直接双击，而旧版本还在托盘里运行
+        answer = system.message_box(
+            "网易云 Discord 状态已经在运行了 (右下角托盘图标)。\n\n"
+            f"要关闭正在运行的那个，改用现在打开的这个 (v{VERSION}) 吗？",
+            flags=system.MB_YESNO | system.MB_ICONINFO)
+        if answer != system.IDYES:
+            return
+        if not system.take_over_running_instance():
+            system.message_box("没能关闭正在运行的程序。请右键托盘图标选择「退出」，再重新打开。",
+                               flags=system.MB_ICONWARNING)
+            return
     core.setup_logging("-v" in args)
     log.info("版本 %s", VERSION)
     try:
