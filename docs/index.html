@@ -63,10 +63,10 @@
             <div class="dc-body">
               <div class="cover"></div>
               <div class="dc-info">
-                <div class="dc-title">晚风来信</div>
-                <div class="dc-sub">夜航乐团 · 晚风来信</div>
-                <div class="dc-lyric" data-lyric>♪ 路灯把影子拉得很长</div>
-                <div class="dc-bar"><span data-cur>00:14</span><div class="track"><i data-fill></i></div><span>03:32</span></div>
+                <div class="dc-title">Stay</div>
+                <div class="dc-sub">The Kid LAROI / Justin Bieber · Stay</div>
+                <div class="dc-lyric" data-lyric>♪ Intro</div>
+                <div class="dc-bar"><span data-cur>00:14</span><div class="track"><i data-fill></i></div><span>02:21</span></div>
               </div>
             </div>
             <div class="dc-btns"><span>在网易云音乐中收听</span><span>下载插件</span></div>
@@ -86,10 +86,10 @@
         <div class="scene-grid">
           <div class="scene-copy">
             <p class="eyebrow">实时歌词</p>
-            <h2 class="headline">唱到哪一句，<br>就显示哪一句。</h2>
+            <h2 class="headline"><span class="ln">唱到哪一句，</span><span class="ln">就显示哪一句。</span></h2>
             <p class="body">歌词会出现在状态的第三行，跟着歌曲一起走。好友点开你的资料卡，看到的就是你此刻耳机里的那一句。</p>
           </div>
-          <ol class="lyric-list" id="lyricList">
+          <ol class="lyric-list" id="lyricList" aria-label="示意歌词">
             <li>路灯把影子拉得很长</li>
             <li>我把耳机音量调到刚好</li>
             <li>晚风替我寄出一封信</li>
@@ -97,6 +97,7 @@
             <li>如果你刚好也醒着</li>
             <li>就点开这首歌吧</li>
           </ol>
+          <p class="lyric-note">* 示意歌词</p>
         </div>
       </div>
     </section>
@@ -106,17 +107,17 @@
       <div class="sticky">
         <div class="scrub-wrap">
           <p class="eyebrow">精确进度</p>
-          <h2 class="headline center">拖动进度条？<br><em>它跟得上。</em></h2>
+          <h2 class="headline center"><span class="ln">拖动进度条？</span><span class="ln"><em>它跟得上。</em></span></h2>
           <div class="scrub-time" aria-hidden="true"><span id="scrubTime">00:00</span></div>
           <div class="dc-card dc-wide" aria-hidden="true">
             <div class="dc-head">正在收听 <b>NeteaseMusic</b><span class="dots">···</span></div>
             <div class="dc-body">
               <div class="cover"></div>
               <div class="dc-info">
-                <div class="dc-title">晚风来信</div>
-                <div class="dc-sub">夜航乐团 · 晚风来信</div>
-                <div class="dc-lyric" id="scrubLyric">♪ 路灯把影子拉得很长</div>
-                <div class="dc-bar"><span id="scrubCur">00:00</span><div class="track"><i id="scrubFill"></i></div><span>03:32</span></div>
+                <div class="dc-title">Stay</div>
+                <div class="dc-sub">The Kid LAROI / Justin Bieber · Stay</div>
+                <div class="dc-lyric" id="scrubLyric">♪ Intro</div>
+                <div class="dc-bar"><span id="scrubCur">00:00</span><div class="track"><i id="scrubFill"></i></div><span>02:21</span></div>
               </div>
             </div>
           </div>
@@ -129,7 +130,7 @@
     <section class="features" id="features">
       <div class="section-head reveal">
         <p class="eyebrow">为什么是它</p>
-        <h2 class="headline">小，但每个细节<br>都想过了。</h2>
+        <h2 class="headline"><span class="ln">小，但每个细节</span><span class="ln">都想过了。</span></h2>
       </div>
 
       <div class="bento">
@@ -137,7 +138,7 @@
           <div class="tile-visual">
             <div class="mini-card" id="pauseCard">
               <div class="cover"></div>
-              <div><b>晚风来信</b><span class="mini-state" data-playing="♪ 晚风替我寄出一封信" data-paused="⏸ 已暂停 · 夜航乐团">♪ 晚风替我寄出一封信</span></div>
+              <div><b>Stay</b><span class="mini-state" data-playing="♪ Chorus" data-paused="⏸ 已暂停 · The Kid LAROI / Justin Bieber">♪ Chorus</span></div>
             </div>
           </div>
           <h3>暂停，也同步。</h3>
@@ -187,7 +188,7 @@
     <section class="start" id="start">
       <div class="section-head reveal">
         <p class="eyebrow">三步上手</p>
-        <h2 class="headline">一分钟，<br>就能用上。</h2>
+        <h2 class="headline"><span class="ln">一分钟，</span><span class="ln">就能用上。</span></h2>
       </div>
       <ol class="steps">
         <li class="step reveal">
@@ -262,7 +263,7 @@
 
   <footer class="footer">
     <p>网易云 Discord 状态 · 以 <a href="https://github.com/EdisonJun/Neteasediscord/blob/main/LICENSE" target="_blank" rel="noopener">GPL-3.0</a> 开源 · 由 <a href="https://github.com/EdisonJun" target="_blank" rel="noopener">EdisonJun</a> 制作</p>
-    <p class="fine">本项目为非官方的个人开源工具，与网易云音乐、Discord 官方没有任何关系。页面中的歌曲、歌手与歌词均为示意内容。</p>
+    <p class="fine">本项目为非官方的个人开源工具，与网易云音乐、Discord 官方没有任何关系。页面中的歌曲信息仅用于演示效果，歌词均为示意内容，不代表真实歌词；专辑封面为示意插画。</p>
   </footer>
 
   <script src="main.js"></script>

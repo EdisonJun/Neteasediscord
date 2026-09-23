@@ -10,15 +10,16 @@
     return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
   };
 
-  // 示意歌曲 (均为虚构内容)
-  const DURATION = 212; // 03:32
+  // 演示歌曲: Stay (02:21)。不展示真实歌词，歌词位显示歌曲段落 (时间为示意)
+  const DURATION = 141; // 02:21
   const LYRICS = [
-    [0, "路灯把影子拉得很长"],
-    [34, "我把耳机音量调到刚好"],
-    [68, "晚风替我寄出一封信"],
-    [102, "收件人写着：正在听歌的你"],
-    [140, "如果你刚好也醒着"],
-    [176, "就点开这首歌吧"],
+    [0, "Intro"],
+    [12, "Verse 1"],
+    [30, "Pre-Chorus"],
+    [42, "Chorus"],
+    [66, "Verse 2"],
+    [90, "Chorus"],
+    [118, "Outro"],
   ];
   const lyricAt = (t) => {
     let line = LYRICS[0][1];

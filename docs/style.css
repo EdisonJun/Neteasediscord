@@ -71,12 +71,12 @@ code {
   font-size: clamp(44px, 6vw, 88px);
   line-height: 1.08; letter-spacing: -0.02em;
 }
-.display .ln { display: block; white-space: nowrap; } /* 每行一句，不让最后一个字掉到下一行 */
+.display .ln, .headline .ln { display: block; white-space: nowrap; } /* 每行一句，不让最后一个字掉到下一行 */
 .display.small { font-size: clamp(40px, 6.4vw, 88px); text-align: center; }
 .headline {
   margin: 0;
   font-family: var(--serif); font-weight: 900;
-  font-size: clamp(36px, 5.6vw, 72px);
+  font-size: clamp(34px, 5vw, 64px);
   line-height: 1.1; letter-spacing: -0.015em;
 }
 .headline em, .display em {
@@ -268,6 +268,7 @@ code {
 .lyric-list li.past { color: rgba(245, 245, 247, 0.32); filter: none; }
 .lyric-list li.active { color: var(--ink); transform: scale(1.04); filter: none; }
 .lyric-list li.active::before { content: "♪ "; color: var(--red); }
+.lyric-note { grid-column: 2; margin: -40px 0 0; font-size: 13px; color: var(--ink-3); }
 
 .scene-scrub .sticky { background: radial-gradient(ellipse 70% 50% at 50% 60%, rgba(255, 69, 69, 0.10), transparent 70%); }
 .scrub-wrap { width: 100%; max-width: 760px; margin: 0 auto; padding: 0 var(--gutter); text-align: center; }
@@ -321,7 +322,8 @@ code {
 }
 .mini-card .cover { width: 58px; height: 58px; }
 .mini-card b { display: block; font-size: 15px; }
-.mini-state { display: block; font-size: 14px; color: #b5bac1; transition: color 0.3s; }
+.mini-card > div:last-child { min-width: 0; }
+.mini-state { display: block; font-size: 14px; color: #b5bac1; transition: color 0.3s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mini-card.paused .mini-state { color: #f0b232; }
 .mini-card.paused .cover { filter: grayscale(0.7) brightness(0.7); }
 .mini-card .cover { transition: filter 0.5s; }
@@ -435,6 +437,7 @@ code {
   .vinyl-wrap { width: 380px; height: 380px; right: -30px; }
   .card-float { width: 340px; left: 0; bottom: 10px; }
   .scene-grid { grid-template-columns: 1fr; gap: 36px; }
+  .lyric-note { grid-column: 1; margin-top: -24px; }
   .tile-pause, .tile-buttons { grid-column: span 6; }
   .tile-tray, .tile-light, .tile-open { grid-column: span 3; }
   .tile-open { grid-column: span 6; }
