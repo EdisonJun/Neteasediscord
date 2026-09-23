@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>网易云 Discord 状态 — 让好友听见你在听什么</title>
+  <meta name="description" content="一个安静运行在托盘里的 Windows 小工具，把网易云音乐正在播放的歌曲、歌词和进度，实时同步成 Discord 的「正在收听」状态。免费开源。">
+  <meta property="og:title" content="网易云 Discord 状态">
+  <meta property="og:description" content="把网易云音乐正在播放的歌，实时同步成 Discord 的「正在收听」状态。">
+  <meta name="theme-color" content="#0a0a0c">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23e94646'/%3E%3Cellipse cx='22' cy='43' rx='6' ry='5' fill='%23fff'/%3E%3Cellipse cx='42' cy='39' rx='6' ry='5' fill='%23fff'/%3E%3Cpath d='M25 16h3v28h-3zM45 12h3v28h-3zM25 16l23-4v7l-23 4z' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- ============ 导航 ============ -->
+  <header class="nav" id="nav">
+    <a class="brand" href="#top" aria-label="回到顶部">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30"/><ellipse cx="22" cy="43" rx="6" ry="5"/><ellipse cx="42" cy="39" rx="6" ry="5"/><path d="M25 16h3v28h-3zM45 12h3v28h-3zM25 16l23-4v7l-23 4z"/></svg>
+      <span>网易云 Discord 状态</span>
+    </a>
+    <nav class="nav-links" aria-label="页面导航">
+      <a href="#lyrics">歌词</a>
+      <a href="#features">功能</a>
+      <a href="#start">上手</a>
+      <a href="#faq">问答</a>
+      <a href="https://github.com/EdisonJun/Neteasediscord" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+    <a class="pill pill-sm" href="https://github.com/EdisonJun/Neteasediscord/releases/latest" target="_blank" rel="noopener">下载</a>
+  </header>
+
+  <main id="top">
+    <!-- ============ Hero ============ -->
+    <section class="hero">
+      <div class="glow glow-a" data-speed="-0.25" aria-hidden="true"></div>
+      <div class="glow glow-b" data-speed="-0.12" aria-hidden="true"></div>
+
+      <div class="hero-copy">
+        <p class="eyebrow reveal">网易云音乐 <span class="arrow">→</span> Discord</p>
+        <h1 class="display reveal" style="--d:.08s"><span class="ln">让好友听见</span><span class="ln">你在听什么。</span></h1>
+        <p class="lede reveal" style="--d:.16s">一个安静待在托盘里的小工具。你在网易云音乐里放的每一首歌，都会实时变成 Discord 上的「正在收听」—— 连同封面、进度和正在唱的那一句。</p>
+        <div class="cta reveal" style="--d:.24s">
+          <a class="pill" href="https://github.com/EdisonJun/Neteasediscord/releases/latest" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16"/></svg>
+            下载 Windows 版
+          </a>
+          <a class="link" href="https://github.com/EdisonJun/Neteasediscord" target="_blank" rel="noopener">查看源代码 <span>›</span></a>
+        </div>
+        <p class="meta reveal" style="--d:.32s">免费 · 开源 GPL-3.0 · Windows 10 / 11 · 无需安装 Python</p>
+      </div>
+
+      <div class="stage" aria-hidden="true">
+        <div class="vinyl-wrap" data-speed="0.18">
+          <div class="vinyl"><div class="vinyl-label"></div><div class="vinyl-sheen"></div></div>
+        </div>
+        <div class="card-float" data-speed="-0.1">
+          <div class="dc-card" id="heroCard">
+            <div class="dc-head">正在收听 <b>NeteaseMusic</b><span class="dots">···</span></div>
+            <div class="dc-body">
+              <div class="cover"></div>
+              <div class="dc-info">
+                <div class="dc-title">晚风来信</div>
+                <div class="dc-sub">夜航乐团 · 晚风来信</div>
+                <div class="dc-lyric" data-lyric>♪ 路灯把影子拉得很长</div>
+                <div class="dc-bar"><span data-cur>00:14</span><div class="track"><i data-fill></i></div><span>03:32</span></div>
+              </div>
+            </div>
+            <div class="dc-btns"><span>在网易云音乐中收听</span><span>下载插件</span></div>
+          </div>
+        </div>
+        <div class="chip chip-a" data-speed="-0.35">♪ 实时歌词</div>
+        <div class="chip chip-b" data-speed="-0.22">⏸ 暂停同步</div>
+        <div class="chip chip-c" data-speed="-0.42">◉ 专辑封面</div>
+      </div>
+
+      <a class="scroll-hint" href="#lyrics" aria-label="向下滚动"><span></span></a>
+    </section>
+
+    <!-- ============ 歌词：滚动逐句点亮 ============ -->
+    <section class="scene scene-lyrics" id="lyrics" style="--len:5">
+      <div class="sticky">
+        <div class="scene-grid">
+          <div class="scene-copy">
+            <p class="eyebrow">实时歌词</p>
+            <h2 class="headline">唱到哪一句，<br>就显示哪一句。</h2>
+            <p class="body">歌词会出现在状态的第三行，跟着歌曲一起走。好友点开你的资料卡，看到的就是你此刻耳机里的那一句。</p>
+          </div>
+          <ol class="lyric-list" id="lyricList">
+            <li>路灯把影子拉得很长</li>
+            <li>我把耳机音量调到刚好</li>
+            <li>晚风替我寄出一封信</li>
+            <li>收件人写着：正在听歌的你</li>
+            <li>如果你刚好也醒着</li>
+            <li>就点开这首歌吧</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 进度：滚动拖动进度条 ============ -->
+    <section class="scene scene-scrub" id="scrub" style="--len:4">
+      <div class="sticky">
+        <div class="scrub-wrap">
+          <p class="eyebrow">精确进度</p>
+          <h2 class="headline center">拖动进度条？<br><em>它跟得上。</em></h2>
+          <div class="scrub-time" aria-hidden="true"><span id="scrubTime">00:00</span></div>
+          <div class="dc-card dc-wide" aria-hidden="true">
+            <div class="dc-head">正在收听 <b>NeteaseMusic</b><span class="dots">···</span></div>
+            <div class="dc-body">
+              <div class="cover"></div>
+              <div class="dc-info">
+                <div class="dc-title">晚风来信</div>
+                <div class="dc-sub">夜航乐团 · 晚风来信</div>
+                <div class="dc-lyric" id="scrubLyric">♪ 路灯把影子拉得很长</div>
+                <div class="dc-bar"><span id="scrubCur">00:00</span><div class="track"><i id="scrubFill"></i></div><span>03:32</span></div>
+              </div>
+            </div>
+          </div>
+          <p class="body center narrow">开启「精确进度」后，程序直接读取网易云播放器自己的进度和播放状态。快进、倒退、暂停，Discord 上的进度条和歌词都会立刻跟上。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 功能 Bento ============ -->
+    <section class="features" id="features">
+      <div class="section-head reveal">
+        <p class="eyebrow">为什么是它</p>
+        <h2 class="headline">小，但每个细节<br>都想过了。</h2>
+      </div>
+
+      <div class="bento">
+        <article class="tile tile-pause reveal">
+          <div class="tile-visual">
+            <div class="mini-card" id="pauseCard">
+              <div class="cover"></div>
+              <div><b>晚风来信</b><span class="mini-state" data-playing="♪ 晚风替我寄出一封信" data-paused="⏸ 已暂停 · 夜航乐团">♪ 晚风替我寄出一封信</span></div>
+            </div>
+          </div>
+          <h3>暂停，也同步。</h3>
+          <p>按下暂停，状态立刻变成「已暂停」；继续播放，进度从停下的地方接着走。</p>
+        </article>
+
+        <article class="tile tile-buttons reveal" style="--d:.06s">
+          <div class="tile-visual stack">
+            <span class="fake-btn">在网易云音乐中收听</span>
+            <span class="fake-btn">下载插件</span>
+          </div>
+          <h3>一键去听同一首。</h3>
+          <p>好友点一下按钮，就能在网易云打开这首歌；喜欢这个效果，还能顺手下载插件。</p>
+        </article>
+
+        <article class="tile tile-tray reveal" style="--d:.12s">
+          <div class="tile-visual">
+            <div class="tray">
+              <span class="tray-icon"></span>
+              <ul>
+                <li class="on">显示歌词</li>
+                <li class="on">暂停时保留状态</li>
+                <li class="on">开机自动启动</li>
+                <li>开启精确进度…</li>
+              </ul>
+            </div>
+          </div>
+          <h3>住在托盘里。</h3>
+          <p>没有窗口，没有打扰。右键托盘图标，所有开关都在这里；也可以设为开机自启。</p>
+        </article>
+
+        <article class="tile tile-light reveal" style="--d:.18s">
+          <div class="big-num" data-speed="-0.06" data-max="24">0</div>
+          <h3>零配置。</h3>
+          <p>下载、双击、完成。不需要安装 Python，不需要注册开发者账号。</p>
+        </article>
+
+        <article class="tile tile-open reveal" style="--d:.24s">
+          <div class="big-word">GPL-3.0</div>
+          <h3>完全开源。</h3>
+          <p>每一行代码都在 GitHub 上。Release 里的 exe 由 GitHub Actions 从源码自动构建。</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ 三步上手 ============ -->
+    <section class="start" id="start">
+      <div class="section-head reveal">
+        <p class="eyebrow">三步上手</p>
+        <h2 class="headline">一分钟，<br>就能用上。</h2>
+      </div>
+      <ol class="steps">
+        <li class="step reveal">
+          <span class="step-num" data-speed="-0.08" data-max="20">1</span>
+          <h3>下载</h3>
+          <p>从 Release 页面下载 <code>NeteaseDiscordRPC.exe</code>，放进一个固定的文件夹。</p>
+        </li>
+        <li class="step reveal" style="--d:.08s">
+          <span class="step-num" data-speed="-0.14" data-max="20">2</span>
+          <h3>运行</h3>
+          <p>打开 Discord 桌面客户端，双击 exe。右下角托盘会出现一个红色音符。</p>
+        </li>
+        <li class="step reveal" style="--d:.16s">
+          <span class="step-num" data-speed="-0.2" data-max="20">3</span>
+          <h3>播放</h3>
+          <p>在网易云音乐里放一首歌。完成了——好友已经能看到了。</p>
+        </li>
+      </ol>
+      <div class="start-cta reveal">
+        <a class="pill" href="https://github.com/EdisonJun/Neteasediscord/releases/latest" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16"/></svg>
+          下载最新版本
+        </a>
+      </div>
+    </section>
+
+    <!-- ============ 问答 ============ -->
+    <section class="faq" id="faq">
+      <div class="section-head reveal">
+        <p class="eyebrow">常见问题</p>
+        <h2 class="headline">还有疑问？</h2>
+      </div>
+      <div class="faq-list">
+        <details class="reveal">
+          <summary>Windows 提示「已保护你的电脑」怎么办？</summary>
+          <p>这个 exe 没有做代码签名，新发布的程序都会遇到。点「仍要运行」即可；如果只看到「不运行」，先点「更多信息」。源码完全公开，也可以自己从源码构建。</p>
+        </details>
+        <details class="reveal">
+          <summary>我能看到状态，别人却看不到？</summary>
+          <p>这是 Discord 的隐私设置：在「用户设置 → 活动隐私」里打开「分享我的活动状态」，并在对应服务器的「隐私设置」里打开「活动状态」。在线状态也不能是「隐身」。</p>
+        </details>
+        <details class="reveal">
+          <summary>「精确进度」是什么？安全吗？</summary>
+          <p>在托盘菜单开启后，程序会给网易云的快捷方式加上本地调试端口，从而读取网易云自己的播放进度。端口只监听 127.0.0.1，局域网内的其他设备无法访问；但本机上的其他程序可以通过它控制网易云，请只在自己信任的电脑上开启。</p>
+        </details>
+        <details class="reveal">
+          <summary>会收集我的数据吗？</summary>
+          <p>不会。程序只做两件事：把播放状态发给你本机的 Discord 客户端（由 Discord 展示给好友），以及用歌曲 ID 向网易云的公开接口请求歌词（可以在菜单里关闭歌词）。</p>
+        </details>
+        <details class="reveal">
+          <summary>支持 macOS 或网页版吗？</summary>
+          <p>目前只支持 Windows 上的网易云音乐 PC 客户端和 Discord 桌面客户端。</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- ============ 结尾 ============ -->
+    <section class="outro">
+      <div class="vinyl-wrap outro-vinyl" data-speed="0.12" aria-hidden="true">
+        <div class="vinyl"><div class="vinyl-label"></div><div class="vinyl-sheen"></div></div>
+      </div>
+      <h2 class="display small reveal">下一首，<br>让他们一起听。</h2>
+      <div class="cta center reveal" style="--d:.1s">
+        <a class="pill" href="https://github.com/EdisonJun/Neteasediscord/releases/latest" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16"/></svg>
+          免费下载
+        </a>
+        <a class="link" href="https://github.com/EdisonJun/Neteasediscord" target="_blank" rel="noopener">在 GitHub 上点个 Star <span>›</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>网易云 Discord 状态 · 以 <a href="https://github.com/EdisonJun/Neteasediscord/blob/main/LICENSE" target="_blank" rel="noopener">GPL-3.0</a> 开源 · 由 <a href="https://github.com/EdisonJun" target="_blank" rel="noopener">EdisonJun</a> 制作</p>
+    <p class="fine">本项目为非官方的个人开源工具，与网易云音乐、Discord 官方没有任何关系。页面中的歌曲、歌手与歌词均为示意内容。</p>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>

@@ -4,3 +4,4 @@ dist/
 *.spec
 *.log
 config.json
+.claude/
