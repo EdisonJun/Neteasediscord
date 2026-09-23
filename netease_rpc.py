@@ -34,12 +34,14 @@ DEFAULT_CONFIG = {
     "client_id": "1552064189902888970",  # Discord 应用 "NeteaseMusic"，可换成自己的
     "poll_interval": 1,
     "show_buttons": True,
+    "show_download_button": True,
     "show_when_paused": False,
     "show_lyrics": True,
     "pause_grace": 1.5,
     "cdp_port": 29222,  # 网易云的 --remote-debugging-port，0 表示不用
 }
 LYRIC_INTERVAL = 4  # 秒
+DOWNLOAD_URL = "https://github.com/EdisonJun/Neteasediscord/releases/latest"
 
 log = logging.getLogger("netease-rpc")
 
@@ -51,6 +53,16 @@ user32 = ctypes.WinDLL("user32", use_last_error=True)
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 EnumWindowsProc = ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
+
+# 声明参数类型: 否则 ctypes 按 32 位 int 传句柄，64 位句柄会溢出，导致枚举窗口提前中断
+user32.EnumWindows.argtypes = [EnumWindowsProc, wt.LPARAM]
+user32.GetWindowThreadProcessId.argtypes = [wt.HWND, ctypes.POINTER(wt.DWORD)]
+user32.GetWindowTextLengthW.argtypes = [wt.HWND]
+user32.GetWindowTextW.argtypes = [wt.HWND, wt.LPWSTR, ctypes.c_int]
+kernel32.OpenProcess.argtypes = [wt.DWORD, wt.BOOL, wt.DWORD]
+kernel32.OpenProcess.restype = wt.HANDLE
+kernel32.QueryFullProcessImageNameW.argtypes = [wt.HANDLE, wt.DWORD, wt.LPWSTR, ctypes.POINTER(wt.DWORD)]
+kernel32.CloseHandle.argtypes = [wt.HANDLE]
 
 
 def _process_name(pid):
@@ -505,11 +517,14 @@ class Tracker:
         if not playing:
             activity["state"] = _clip("⏸ 已暂停 · " + (info["artists"] or ""))
             activity["assets"]["large_text"] = _clip(info["album"] or info["name"])
+        buttons = []  # Discord 最多 2 个按钮
         if info["id"] and self.config["show_buttons"]:
-            activity["buttons"] = [{
-                "label": "在网易云音乐中收听",
-                "url": f"https://music.163.com/song?id={info['id']}",
-            }]
+            buttons.append({"label": "在网易云音乐中收听",
+                            "url": f"https://music.163.com/song?id={info['id']}"})
+        if self.config["show_download_button"]:
+            buttons.append({"label": "下载插件", "url": DOWNLOAD_URL})
+        if buttons:
+            activity["buttons"] = buttons
         return activity
 
     def change_level(self, activity):

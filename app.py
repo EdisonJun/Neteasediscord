@@ -13,7 +13,7 @@ import threading
 import netease_rpc as core
 import system
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 HOMEPAGE = "https://github.com/EdisonJun/Neteasediscord"
 log = core.log
 
@@ -104,6 +104,7 @@ class TrayApp:
             toggle("show_lyrics"),
             toggle("show_when_paused"),
             toggle("show_buttons"),
+            toggle("show_download_button"),
             Menu.SEPARATOR,
             Item("开机自动启动", self._toggle_autostart, checked=lambda item: system.autostart_enabled()),
             Item("开启精确进度 (网易云调试端口)…", self._enable_debug_port),
@@ -119,7 +120,8 @@ class TrayApp:
     def _label(key):
         return {"show_lyrics": "显示歌词",
                 "show_when_paused": "暂停时保留状态",
-                "show_buttons": "显示「在网易云音乐中收听」按钮"}[key]
+                "show_buttons": "显示「在网易云音乐中收听」按钮",
+                "show_download_button": "显示「下载插件」按钮"}[key]
 
     def _status_discord(self):
         return "Discord：已连接" if self.presence.discord_ok else "Discord：未连接 (请打开 Discord 客户端)"
