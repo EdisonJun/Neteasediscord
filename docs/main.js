@@ -133,6 +133,21 @@
   tickHero();
   setInterval(() => { heroT = (heroT + 3) % DURATION; tickHero(); }, 1000);
 
+  /* ---------------- 下载链接：指向带版本号的文件 ----------------
+     每个版本的文件名不同 (NeteaseDiscordRPC-1.2.1.exe)，Windows 资源管理器就不会
+     沿用下载文件夹里同名旧文件缓存的图标。查询失败时保留 HTML 里的固定链接 */
+  fetch("https://api.github.com/repos/EdisonJun/Neteasediscord/releases/latest",
+        { headers: { Accept: "application/vnd.github+json" } })
+    .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+    .then((release) => {
+      const asset = (release.assets || []).find((a) => /^NeteaseDiscordRPC-.+\.exe$/i.test(a.name));
+      if (asset) {
+        document.querySelectorAll("[data-download]").forEach((a) => { a.href = asset.browser_download_url; });
+      }
+      document.querySelectorAll("[data-version]").forEach((el) => { el.textContent = release.tag_name; });
+    })
+    .catch(() => {});
+
   /* ---------------- Bento：暂停 / 播放 循环 ---------------- */
   const pauseCard = document.getElementById("pauseCard");
   if (pauseCard) {

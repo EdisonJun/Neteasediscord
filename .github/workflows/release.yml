@@ -31,8 +31,16 @@ jobs:
           APP_VERSION: ${{ github.ref_name }}  # tag，例如 v1.2.0
         run: python build.py
 
+      # 额外放一份带版本号的文件：每个版本的文件名都不同，
+      # Windows 资源管理器就不会沿用旧版本缓存的图标 (介绍页的下载按钮用这个)
+      - name: Add versioned copy
+        shell: pwsh
+        run: Copy-Item dist/NeteaseDiscordRPC.exe "dist/NeteaseDiscordRPC-$("${{ github.ref_name }}".TrimStart('v')).exe"
+
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/NeteaseDiscordRPC.exe
+          files: |
+            dist/NeteaseDiscordRPC.exe
+            dist/NeteaseDiscordRPC-*.exe
           generate_release_notes: true
