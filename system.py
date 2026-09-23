@@ -52,20 +52,47 @@ def self_command(*args):
 # --------------------------------------------------------------------------
 # 开机自启 (HKCU\...\Run，不需要管理员权限)
 # --------------------------------------------------------------------------
-def autostart_enabled():
+def _autostart_value():
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as k:
-            winreg.QueryValueEx(k, APP_NAME)
-        return True
+            return winreg.QueryValueEx(k, APP_NAME)[0]
     except OSError:
+        return None
+
+
+def _autostart_command():
+    exe, params = self_command()
+    return f'"{exe}" {params}'.strip()
+
+
+def autostart_enabled():
+    return _autostart_value() is not None
+
+
+def _registered_exe(value):
+    """从 '"C:\\path\\app.exe" args' 里取出 exe 路径"""
+    value = value.strip()
+    if value.startswith('"'):
+        return value[1:].split('"', 1)[0]
+    return value.split(" ", 1)[0]
+
+
+def repair_autostart():
+    """开机自启登记的 exe 已经不存在 (被移动或删除) 时，改成当前位置。返回是否修复了。
+    登记的文件还在时不动它：用户可能同时有好几份 (例如下载的正式版和本地开发版)"""
+    value = _autostart_value()
+    if value is None or value == _autostart_command():
         return False
+    if os.path.exists(_registered_exe(value)):
+        return False
+    set_autostart(True)
+    return True
 
 
 def set_autostart(enabled):
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as k:
         if enabled:
-            exe, params = self_command()
-            winreg.SetValueEx(k, APP_NAME, 0, winreg.REG_SZ, f'"{exe}" {params}'.strip())
+            winreg.SetValueEx(k, APP_NAME, 0, winreg.REG_SZ, _autostart_command())
         else:
             try:
                 winreg.DeleteValue(k, APP_NAME)
@@ -126,28 +153,41 @@ def _netease_run_value():
         return None
 
 
-def enable_debug_port(port):
-    """需要管理员权限 (开始菜单里的快捷方式在 ProgramData 下)。返回 (成功列表, 失败列表)"""
-    flag, ok, failed = _debug_flag(port), [], []
+def _with_flag(args, flag):
+    """去掉已有的 --remote-debugging-port=...，flag 不为空时再加上新的"""
+    kept = [a for a in args.split(" ") if a and not a.startswith("--remote-debugging-port=")]
+    return " ".join(kept + ([flag] if flag else []))
+
+
+def _set_debug_port(flag):
+    ok, failed = [], []
     for path, lnk in netease_shortcuts():
         try:
-            if flag not in lnk.Arguments:
-                # 端口号改过的话先去掉旧参数
-                args = " ".join(a for a in lnk.Arguments.split()
-                                if not a.startswith("--remote-debugging-port="))
-                lnk.Arguments = f"{args} {flag}".strip()
+            new = _with_flag(lnk.Arguments, flag)
+            if new != lnk.Arguments:
+                lnk.Arguments = new
                 lnk.Save()
             ok.append(path)
         except Exception as e:
             failed.append(f"{path}: {e}")
     cmd = _netease_run_value()
-    if cmd is not None and flag not in cmd:
-        cmd = " ".join(a for a in cmd.split(" ") if not a.startswith("--remote-debugging-port="))
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as k:
-            winreg.SetValueEx(k, "cloudmusic", 0, winreg.REG_SZ, f"{cmd} {flag}")
     if cmd is not None:
+        new = _with_flag(cmd, flag)
+        if new != cmd:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as k:
+                winreg.SetValueEx(k, "cloudmusic", 0, winreg.REG_SZ, new)
         ok.append("网易云开机自启")
     return ok, failed
+
+
+def enable_debug_port(port):
+    """需要管理员权限 (开始菜单里的快捷方式在 ProgramData 下)。返回 (成功列表, 失败列表)"""
+    return _set_debug_port(_debug_flag(port))
+
+
+def disable_debug_port():
+    """把网易云的快捷方式和开机自启还原成没有调试端口的样子"""
+    return _set_debug_port(None)
 
 
 # --------------------------------------------------------------------------
@@ -176,14 +216,14 @@ def netease_exe_path():
     return None
 
 
-def restart_netease(port):
-    """结束网易云并带调试端口重新启动"""
+def restart_netease(port=None):
+    """结束网易云并重新启动；port 不为空时带上调试端口"""
     exe = netease_exe_path()
     subprocess.run(["taskkill", "/IM", NETEASE_EXE, "/F"], capture_output=True,
                    creationflags=subprocess.CREATE_NO_WINDOW)
     if exe:
         import time
         time.sleep(1.5)
-        subprocess.Popen([exe, _debug_flag(port)], cwd=os.path.dirname(exe),
+        subprocess.Popen([exe] + ([_debug_flag(port)] if port else []), cwd=os.path.dirname(exe),
                          creationflags=subprocess.DETACHED_PROCESS)
     return exe is not None

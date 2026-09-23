@@ -8,10 +8,15 @@
   <meta property="og:title" content="网易云 Discord 状态">
   <meta property="og:description" content="把网易云音乐正在播放的歌，实时同步成 Discord 的「正在收听」状态。">
   <meta name="theme-color" content="#0a0a0c">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23e94646'/%3E%3Cellipse cx='22' cy='43' rx='6' ry='5' fill='%23fff'/%3E%3Cellipse cx='42' cy='39' rx='6' ry='5' fill='%23fff'/%3E%3Cpath d='M25 16h3v28h-3zM45 12h3v28h-3zM25 16l23-4v7l-23 4z' fill='%23fff'/%3E%3C/svg%3E">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;900&display=swap" rel="stylesheet">
+  <link rel="icon" href="icon.png" type="image/png">
+  <link rel="apple-touch-icon" href="icon-512.png">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://edisonjun.github.io/Neteasediscord/">
+  <meta property="og:image" content="https://edisonjun.github.io/Neteasediscord/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="fonts.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -20,7 +25,7 @@
   <!-- ============ 导航 ============ -->
   <header class="nav" id="nav">
     <a class="brand" href="#top" aria-label="回到顶部">
-      <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30"/><ellipse cx="22" cy="43" rx="6" ry="5"/><ellipse cx="42" cy="39" rx="6" ry="5"/><path d="M25 16h3v28h-3zM45 12h3v28h-3zM25 16l23-4v7l-23 4z"/></svg>
+      <img src="icon.png" alt="" width="26" height="26">
       <span>网易云 Discord 状态</span>
     </a>
     <nav class="nav-links" aria-label="页面导航">
@@ -30,7 +35,7 @@
       <a href="#faq">问答</a>
       <a href="https://github.com/EdisonJun/Neteasediscord" target="_blank" rel="noopener">GitHub</a>
     </nav>
-    <a class="pill pill-sm" href="https://github.com/EdisonJun/Neteasediscord/releases/latest" target="_blank" rel="noopener">下载</a>
+    <a class="pill pill-sm" href="https://github.com/EdisonJun/Neteasediscord/releases/latest/download/NeteaseDiscordRPC.exe">下载</a>
   </header>
 
   <main id="top">
@@ -44,7 +49,7 @@
         <h1 class="display reveal" style="--d:.08s"><span class="ln">让好友听见</span><span class="ln">你在听什么。</span></h1>
         <p class="lede reveal" style="--d:.16s">一个安静待在托盘里的小工具。你在网易云音乐里放的每一首歌，都会实时变成 Discord 上的「正在收听」—— 连同封面、进度和正在唱的那一句。</p>
         <div class="cta reveal" style="--d:.24s">
-          <a class="pill" href="https://github.com/EdisonJun/Neteasediscord/releases/latest" target="_blank" rel="noopener">
+          <a class="pill" href="https://github.com/EdisonJun/Neteasediscord/releases/latest/download/NeteaseDiscordRPC.exe">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16"/></svg>
             下载 Windows 版
           </a>
@@ -199,7 +204,7 @@
         <li class="step reveal" style="--d:.08s">
           <span class="step-num" data-speed="-0.14" data-max="20">2</span>
           <h3>运行</h3>
-          <p>打开 Discord 桌面客户端，双击 exe。右下角托盘会出现一个红色音符。</p>
+          <p>打开 Discord 桌面客户端，双击 exe。右下角托盘会出现一个蓝色的小图标。</p>
         </li>
         <li class="step reveal" style="--d:.16s">
           <span class="step-num" data-speed="-0.2" data-max="20">3</span>
@@ -208,7 +213,7 @@
         </li>
       </ol>
       <div class="start-cta reveal">
-        <a class="pill" href="https://github.com/EdisonJun/Neteasediscord/releases/latest" target="_blank" rel="noopener">
+        <a class="pill" href="https://github.com/EdisonJun/Neteasediscord/releases/latest/download/NeteaseDiscordRPC.exe">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16"/></svg>
           下载最新版本
         </a>
@@ -236,7 +241,7 @@
         </details>
         <details class="reveal">
           <summary>会收集我的数据吗？</summary>
-          <p>不会。程序只做两件事：把播放状态发给你本机的 Discord 客户端（由 Discord 展示给好友），以及用歌曲 ID 向网易云的公开接口请求歌词（可以在菜单里关闭歌词）。</p>
+          <p>不会。程序只会联系三个地方：把播放状态发给你本机的 Discord 客户端（由 Discord 展示给好友）；用歌曲 ID 向网易云的公开接口请求歌词（可以在菜单里关闭歌词）；启动时向 GitHub 查询有没有新版本（可以在配置文件里关闭）。</p>
         </details>
         <details class="reveal">
           <summary>支持 macOS 或网页版吗？</summary>
@@ -252,7 +257,7 @@
       </div>
       <h2 class="display small reveal">下一首，<br>让他们一起听。</h2>
       <div class="cta center reveal" style="--d:.1s">
-        <a class="pill" href="https://github.com/EdisonJun/Neteasediscord/releases/latest" target="_blank" rel="noopener">
+        <a class="pill" href="https://github.com/EdisonJun/Neteasediscord/releases/latest/download/NeteaseDiscordRPC.exe">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16"/></svg>
           免费下载
         </a>

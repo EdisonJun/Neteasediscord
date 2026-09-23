@@ -2,27 +2,30 @@
 
 把你正在网易云音乐（Windows 客户端）里听的歌，显示成 Discord 的「正在收听」状态。
 
+**介绍页：<https://edisonjun.github.io/Neteasediscord/>** · **下载：[最新版本](../../releases/latest)**
+
 ```
 Listening to NeteaseMusic
-┌──────┐  偶像已死
-│ 封面 │  Gareth.T · 偶像已死
-└──────┘  ♪ 执迷不治症
+┌──────┐  歌名
+│ 封面 │  歌手 · 专辑
+└──────┘  ♪ 正在唱的那一句歌词
           00:40 ━━━━━━━━━━━━ 03:32
-          [ 在网易云音乐中收听 ]
+          [   在网易云音乐中收听   ]
+          [        下载插件        ]
 ```
 
 - 显示歌名、歌手、专辑、专辑封面和进度条
 - 实时显示当前唱到的那句歌词
 - 暂停后状态会跟着变，拖动进度条后进度和歌词也会同步
-- 显示一个「在网易云音乐中收听」按钮，好友点击就能打开这首歌
-- 在托盘后台运行，可以开机自启，不需要安装 Python
+- 显示「在网易云音乐中收听」和「下载插件」两个按钮，好友点击就能打开这首歌或本项目
+- 在托盘后台运行，可以开机自启，不需要安装 Python；有新版本时会在托盘提醒
 
 > 仅支持 **Windows** 和**网易云音乐 PC 客户端**（在 3.1.x 上测试通过）。本项目与网易云音乐、Discord 官方没有任何关系。
 
 ## 下载与使用
 
 1. 到 [Releases](../../releases/latest) 下载 `NeteaseDiscordRPC.exe`，放到一个固定的文件夹里（开机自启会记住这个位置）
-2. 打开 Discord 桌面客户端，然后双击 `NeteaseDiscordRPC.exe`。右下角托盘会出现一个红色的音符图标
+2. 打开 Discord 桌面客户端，然后双击 `NeteaseDiscordRPC.exe`。右下角托盘会出现一个蓝色的小图标
 3. 在网易云里播放一首歌，Discord 状态就会显示出来
 
 右键托盘图标可以：
@@ -34,7 +37,7 @@ Listening to NeteaseMusic
 | 显示「在网易云音乐中收听」按钮 | 按钮只有别人能看到，你自己看不到 |
 | 显示「下载插件」按钮 | 别人点击后会打开本项目的介绍页 (edisonjun.github.io/Neteasediscord) |
 | 开机自动启动 | 登录 Windows 后自动在后台运行 |
-| 开启精确进度 | 见下文 |
+| 开启精确进度 / 关闭精确进度 | 见下文 |
 
 ### 开启精确进度（推荐）
 
@@ -44,6 +47,7 @@ Listening to NeteaseMusic
 
 - 需要管理员权限，是因为开始菜单里的网易云快捷方式位于系统目录
 - 网易云更新后可能会重置快捷方式；如果进度又变得不准，再点一次即可
+- 不想用了，点 **「关闭精确进度 (还原网易云快捷方式)…」** 就会把快捷方式改回原样
 - **安全提示**：调试端口只监听 `127.0.0.1`，局域网里的其他电脑访问不到。但开启后，本机上的其他程序可以通过这个端口控制网易云，并读取它的登录状态
 
 ## 常见问题
@@ -69,8 +73,19 @@ Listening to NeteaseMusic
 | `cdp_port` | 网易云调试端口，默认 `29222`；设为 `0` 表示不使用 |
 | `poll_interval` | 检测间隔（秒） |
 | `pause_grace` | 估算模式下，静音持续多少秒判定为暂停 |
+| `check_updates` | 启动时是否向 GitHub 查询新版本，默认 `true` |
 
 修改后需要从托盘退出程序再重新打开。
+
+**会联网做什么？**
+只有三件事：把状态发给本机的 Discord 客户端；用歌曲 ID 向 `music.163.com` 请求歌词（可关闭歌词）；启动时向 `api.github.com` 查询有没有新版本（`check_updates` 设为 `false` 即可关闭）。
+
+## 卸载
+
+1. 右键托盘图标，取消「开机自动启动」
+2. 如果开启过精确进度，点「关闭精确进度 (还原网易云快捷方式)…」
+3. 点「退出」，然后删除 `NeteaseDiscordRPC.exe`
+4. 删除设置和日志文件夹 `%APPDATA%\NeteaseDiscordRPC`
 
 ## 从源码运行 / 打包
 
@@ -78,12 +93,15 @@ Listening to NeteaseMusic
 
 ```bash
 pip install -r requirements.txt
-python app.py              # 托盘模式
-python netease_rpc.py -v   # 命令行模式，输出调试日志
-pip install pyinstaller && python build.py   # 打包到 dist/NeteaseDiscordRPC.exe
+python app.py                              # 托盘模式
+python netease_rpc.py -v                   # 命令行模式，输出调试日志
+python -m unittest discover -s tests -v    # 运行测试
+pip install -r requirements-build.txt && python build.py   # 打包到 dist/NeteaseDiscordRPC.exe
 ```
 
-推送 `v*` 格式的 tag（例如 `v1.0.0`）后，GitHub Actions 会自动打包 exe 并发布到 Releases。
+发布新版本：推送 `v*` 格式的 tag（例如 `git tag v1.2.0 && git push origin v1.2.0`）。GitHub Actions 会先跑测试，再把 tag 写进程序的版本号、打包 exe 并发布到 Releases，不需要手动改版本号。
+
+介绍页在 `docs/`（GitHub Pages 从 `main` 分支的 `/docs` 发布）。修改页面文字后运行 `python tools/subset_fonts.py` 重新生成自托管的字体子集；`python tools/make_og_image.py` 重新生成分享卡片。
 
 ## 工作原理
 

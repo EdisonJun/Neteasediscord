@@ -2,39 +2,63 @@
 
     app.py                       正常启动 (托盘图标)
     app.py --enable-debug-port   (内部使用，由托盘以管理员身份调用) 修改网易云快捷方式
+    app.py --disable-debug-port  (内部使用) 还原网易云快捷方式
 """
 
 import ctypes
 import ctypes.wintypes as wt
+import json
 import os
+import re
 import sys
 import threading
+import urllib.request
 
 import netease_rpc as core
 import system
+from _version import VERSION
 
-VERSION = "1.1.0"
 HOMEPAGE = "https://github.com/EdisonJun/Neteasediscord"
+LATEST_RELEASE_API = "https://api.github.com/repos/EdisonJun/Neteasediscord/releases/latest"
 log = core.log
 
 
 # --------------------------------------------------------------------------
-# 图标 (运行时用 Pillow 画，打包时 build.py 也用它生成 .ico)
+# 更新检查
 # --------------------------------------------------------------------------
+def version_tuple(v):
+    """'v1.2.10' -> (1, 2, 10)；无法解析的部分当作 0"""
+    return tuple(int(x) for x in re.findall(r"\d+", v)[:3]) or (0,)
+
+
+def latest_release():
+    """返回 (tag, 网页地址)，失败返回 None"""
+    try:
+        req = urllib.request.Request(LATEST_RELEASE_API, headers={
+            "User-Agent": f"NeteaseDiscordRPC/{VERSION}", "Accept": "application/vnd.github+json"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.load(r)
+        return data["tag_name"], data["html_url"]
+    except Exception as e:
+        log.debug("检查更新失败: %s", e)
+        return None
+
+
+# --------------------------------------------------------------------------
+# 图标: assets/icon.png (1024px 透明底)。打包后位于 PyInstaller 的解压目录
+# --------------------------------------------------------------------------
+ICON_PATH = os.path.join(getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__))),
+                         "assets", "icon.png")
+
+
 def make_icon(size=64, active=True):
-    from PIL import Image, ImageDraw
-    s = size / 64
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    bg = (233, 70, 70, 255) if active else (130, 130, 140, 255)
-    d.ellipse((2 * s, 2 * s, 62 * s, 62 * s), fill=bg)
-    white = (255, 255, 255, 255)
-    # 八分音符: 两个符头 + 符干 + 横梁
-    d.ellipse((16 * s, 38 * s, 28 * s, 48 * s), fill=white)
-    d.ellipse((36 * s, 34 * s, 48 * s, 44 * s), fill=white)
-    d.rectangle((25 * s, 16 * s, 28 * s, 44 * s), fill=white)
-    d.rectangle((45 * s, 12 * s, 48 * s, 40 * s), fill=white)
-    d.polygon([(25 * s, 16 * s), (48 * s, 12 * s), (48 * s, 19 * s), (25 * s, 23 * s)], fill=white)
+    """active=False (没有在播放) 时返回灰度版本"""
+    from PIL import Image, ImageEnhance
+    img = Image.open(ICON_PATH).convert("RGBA").resize((size, size), Image.LANCZOS)
+    if not active:
+        alpha = img.getchannel("A")
+        img = ImageEnhance.Brightness(img.convert("L")).enhance(0.8).convert("RGBA")
+        img.putalpha(alpha)
     return img
 
 
@@ -63,8 +87,9 @@ def run_elevated_and_wait(*args):
     return code.value
 
 
-def elevated_enable_debug_port(port):
-    ok, failed = system.enable_debug_port(port)
+def elevated_set_debug_port(port):
+    """port 为 None 时还原 (去掉调试端口)"""
+    ok, failed = system.enable_debug_port(port) if port else system.disable_debug_port()
     if failed:
         system.message_box("以下快捷方式修改失败：\n\n" + "\n".join(failed), flags=system.MB_ICONWARNING)
         return 1
@@ -84,6 +109,7 @@ class TrayApp:
         self.icon = pystray.Icon(system.APP_NAME, self.icons[False], "网易云 Discord 状态",
                                  menu=self._menu())
         self._stop = threading.Event()
+        self.update = None  # (tag, url)：发现的新版本
 
     # ---- 菜单 ----
     def _menu(self):
@@ -97,6 +123,8 @@ class TrayApp:
             return Item(self._label(key), action, checked=lambda item: bool(self.cfg[key]))
 
         return Menu(
+            Item(lambda item: f"⬆ 发现新版本 {self.update[0]}，点击下载" if self.update else "",
+                 lambda: os.startfile(self.update[1]), visible=lambda item: bool(self.update)),
             Item(lambda item: self._status_discord(), None, enabled=False),
             Item(lambda item: self._status_song(), None, enabled=False),
             Item(lambda item: self._status_mode(), None, enabled=False),
@@ -107,7 +135,8 @@ class TrayApp:
             toggle("show_download_button"),
             Menu.SEPARATOR,
             Item("开机自动启动", self._toggle_autostart, checked=lambda item: system.autostart_enabled()),
-            Item("开启精确进度 (网易云调试端口)…", self._enable_debug_port),
+            Item("开启精确进度 (网易云调试端口)…", self._set_debug_port(True)),
+            Item("关闭精确进度 (还原网易云快捷方式)…", self._set_debug_port(False)),
             Menu.SEPARATOR,
             Item("打开配置文件", lambda: os.startfile(core.CONFIG_PATH)),
             Item("打开日志", lambda: os.startfile(core.LOG_PATH)),
@@ -136,30 +165,33 @@ class TrayApp:
     def _toggle_autostart(self, icon, item):
         system.set_autostart(not system.autostart_enabled())
 
-    def _enable_debug_port(self, icon, item):
-        threading.Thread(target=self._enable_debug_port_worker, daemon=True).start()
+    def _set_debug_port(self, enable):
+        def action(icon, item):
+            threading.Thread(target=self._debug_port_worker, args=(enable,), daemon=True).start()
+        return action
 
-    def _enable_debug_port_worker(self):
-        port = self.cfg["cdp_port"]
-        if not port:
+    def _debug_port_worker(self, enable):
+        port = self.cfg["cdp_port"] if enable else None
+        if enable and not port:
             system.message_box("config.json 里的 cdp_port 为 0，精确进度已被禁用。")
             return
-        code = run_elevated_and_wait("--enable-debug-port", str(port))
+        code = run_elevated_and_wait(*(["--enable-debug-port", str(port)] if enable else ["--disable-debug-port"]))
+        what = "加上调试端口" if enable else "去掉调试端口"
         if code is None:
             # 没有管理员权限: 至少把不需要权限的部分改掉
-            ok, _ = system.enable_debug_port(port)
-            text = ("没有获得管理员权限，只修改了当前用户可以修改的快捷方式 "
-                    f"({len(ok)} 个)。\n开始菜单里的网易云快捷方式可能仍然没有调试端口。\n\n")
+            ok, _ = system.enable_debug_port(port) if enable else system.disable_debug_port()
+            text = (f"没有获得管理员权限，只为当前用户可以修改的快捷方式{what} ({len(ok)} 个)。\n"
+                    "开始菜单里的网易云快捷方式可能没有改到。\n\n")
         elif code != 0:
             text = "部分快捷方式修改失败 (见上一个提示)。\n\n"
         else:
-            text = "已为网易云的快捷方式和开机自启加上调试端口。\n\n"
+            text = f"已为网易云的快捷方式和开机自启{what}。\n\n"
         if system.netease_running():
             if system.message_box(text + "需要重启网易云才能生效，现在重启吗？\n(会中断正在播放的歌曲)",
                                   flags=system.MB_YESNO | system.MB_ICONINFO) == system.IDYES:
                 system.restart_netease(port)
         else:
-            system.message_box(text + "下次打开网易云后就会使用精确进度。")
+            system.message_box(text + "下次打开网易云时生效。")
 
     def _quit(self, icon, item):
         self._stop.set()
@@ -168,11 +200,26 @@ class TrayApp:
 
     # ---- 刷新图标状态 ----
     def _watch(self):
+        shown = (None, None)
         while not self._stop.wait(2):
             active = self.presence.discord_ok and bool(self.presence.now_playing)
-            self.icon.icon = self.icons[active]
-            title = self.presence.now_playing or "网易云 Discord 状态"
-            self.icon.title = title[:120]
+            title = (self.presence.now_playing or "网易云 Discord 状态")[:120]
+            if (active, title) != shown:  # 只在变化时更新，避免反复刷新托盘
+                self.icon.icon = self.icons[active]
+                self.icon.title = title
+                shown = (active, title)
+
+    def _check_update(self):
+        found = latest_release()
+        if found and version_tuple(found[0]) > version_tuple(VERSION):
+            self.update = found
+            log.info("发现新版本 %s", found[0])
+            self.icon.update_menu()
+            try:
+                self.icon.notify(f"网易云 Discord 状态有新版本 {found[0]}，右键托盘图标即可下载。",
+                                 "发现新版本")
+            except Exception:
+                pass
 
     def _first_run_tip(self):
         if self.cfg.get("first_run_done"):
@@ -193,6 +240,8 @@ class TrayApp:
             icon.visible = True
             threading.Thread(target=self._run_presence, daemon=True).start()
             threading.Thread(target=self._watch, daemon=True).start()
+            if self.cfg.get("check_updates", True):
+                threading.Thread(target=self._check_update, daemon=True).start()
             self._first_run_tip()
         self.icon.run(setup=setup)
 
@@ -205,13 +254,20 @@ class TrayApp:
 def main():
     args = sys.argv[1:]
     if args[:1] == ["--enable-debug-port"]:
-        sys.exit(elevated_enable_debug_port(int(args[1]) if len(args) > 1 else 29222))
+        sys.exit(elevated_set_debug_port(int(args[1]) if len(args) > 1 else 29222))
+    if args[:1] == ["--disable-debug-port"]:
+        sys.exit(elevated_set_debug_port(None))
 
     if not system.acquire_single_instance():
         system.message_box("网易云 Discord 状态已经在运行了，请查看右下角托盘图标。")
         return
     core.setup_logging("-v" in args)
     log.info("版本 %s", VERSION)
+    try:
+        if system.repair_autostart():
+            log.info("程序位置变了，已更新开机自启的路径")
+    except OSError as e:
+        log.warning("更新开机自启路径失败: %s", e)
     try:
         TrayApp().run()
     except Exception:

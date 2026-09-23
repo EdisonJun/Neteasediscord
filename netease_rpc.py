@@ -7,12 +7,15 @@
   * 调试端口 (可选): 网易云以 --remote-debugging-port 启动时读取真实进度与播放状态
   * 音频电平 (pycaw，后备): 网易云在混音器里的电平持续接近 0 即视为暂停
   * 歌词: music.163.com 公开歌词接口
+  * 更新检查 (可关闭): api.github.com 上本项目的最新 Release
 """
 
+import collections
 import ctypes
 import ctypes.wintypes as wt
 import json
 import logging
+import logging.handlers
 import os
 import re
 import sqlite3
@@ -39,8 +42,10 @@ DEFAULT_CONFIG = {
     "show_lyrics": True,
     "pause_grace": 1.5,
     "cdp_port": 29222,  # 网易云的 --remote-debugging-port，0 表示不用
+    "check_updates": True,  # 启动时向 GitHub 查询是否有新版本
 }
-LYRIC_INTERVAL = 4  # 秒
+LYRIC_INTERVAL = 4  # 秒，歌词更新的最小间隔
+RATE_WINDOW, RATE_MAX = 20, 5  # Discord 限制: 20 秒内最多 5 次 SET_ACTIVITY
 DOWNLOAD_URL = "https://edisonjun.github.io/Neteasediscord/"  # 插件介绍页 (GitHub Pages)
 
 log = logging.getLogger("netease-rpc")
@@ -356,32 +361,50 @@ def parse_lrc(text):
 
 class Lyrics:
     URL = "https://music.163.com/api/song/lyric?id={}&lv=1&tv=-1"
+    RETRY_AFTER = 30  # 秒，请求失败 (网络问题) 后多久重试
+    MAX_TRIES = 3
+    MAX_CACHE = 200  # 最多缓存多少首歌的歌词
 
     def __init__(self):
-        self.cache = {}  # song id -> [(秒, 歌词)]，None 表示正在获取
+        self.cache = collections.OrderedDict()  # song id -> [(秒, 歌词)]，None 表示正在获取
+        self.failed = {}  # song id -> (失败次数, 下次可重试的时间)
         self.lock = threading.Lock()
 
+    def _download(self, song_id):
+        req = urllib.request.Request(self.URL.format(song_id), headers={
+            "User-Agent": "Mozilla/5.0", "Referer": "https://music.163.com/"})
+        with urllib.request.urlopen(req, timeout=8) as r:
+            return json.load(r)
+
     def _fetch(self, song_id):
-        lines = []
         try:
-            req = urllib.request.Request(self.URL.format(song_id), headers={
-                "User-Agent": "Mozilla/5.0", "Referer": "https://music.163.com/"})
-            with urllib.request.urlopen(req, timeout=8) as r:
-                data = json.load(r)
+            data = self._download(song_id)
             lines = parse_lrc((data.get("lrc") or {}).get("lyric"))
             log.debug("获取歌词 %s: %d 行", song_id, len(lines))
         except Exception as e:
-            log.debug("获取歌词失败 %s: %s", song_id, e)
+            with self.lock:
+                tries = self.failed.get(song_id, (0, 0))[0] + 1
+                self.failed[song_id] = (tries, time.time() + self.RETRY_AFTER)
+                if tries >= self.MAX_TRIES:
+                    self.cache[song_id] = []  # 放弃，这首歌不显示歌词
+                else:
+                    self.cache.pop(song_id, None)  # 过一会儿再试
+            log.debug("获取歌词失败 %s (第 %d 次): %s", song_id, tries, e)
+            return
         with self.lock:
-            self.cache[song_id] = lines
+            self.cache[song_id] = lines  # 纯音乐 / 没有歌词时是空列表，不再重试
+            self.failed.pop(song_id, None)
+            while len(self.cache) > self.MAX_CACHE:
+                self.cache.popitem(last=False)
 
     def line_at(self, song_id, position):
         if not song_id:
             return ""
         with self.lock:
             if song_id not in self.cache:
-                self.cache[song_id] = None
-                threading.Thread(target=self._fetch, args=(song_id,), daemon=True).start()
+                if time.time() >= self.failed.get(song_id, (0, 0))[1]:
+                    self.cache[song_id] = None
+                    threading.Thread(target=self._fetch, args=(song_id,), daemon=True).start()
                 return ""
             lines = self.cache[song_id]
         current = ""
@@ -572,11 +595,12 @@ def save_config(cfg):
 
 def setup_logging(verbose=False):
     os.makedirs(APP_DIR, exist_ok=True)
-    handlers = [logging.FileHandler(LOG_PATH, "w", "utf-8")]
+    handlers = [logging.handlers.RotatingFileHandler(
+        LOG_PATH, maxBytes=512 * 1024, backupCount=2, encoding="utf-8")]
     if sys.stdout:
         handlers.append(logging.StreamHandler(sys.stdout))
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO,
-                        format="%(asctime)s %(message)s", datefmt="%H:%M:%S", handlers=handlers)
+                        format="%(asctime)s %(message)s", datefmt="%m-%d %H:%M:%S", handlers=handlers)
     logging.getLogger("comtypes").setLevel(logging.WARNING)
     logging.getLogger("PIL").setLevel(logging.WARNING)
 
@@ -607,7 +631,8 @@ class Presence:
     def run(self):
         ipc, tracker = self.ipc, self.tracker
         last_send = 0.0
-        log.info("网易云 Discord 状态同步已启动")
+        sent = collections.deque()  # 最近 RATE_WINDOW 秒内的发送时间
+        log.info("========== 网易云 Discord 状态同步已启动 ==========")
         while not self._stop.is_set():
             try:
                 if not ipc.connected:
@@ -616,11 +641,17 @@ class Presence:
                 self.discord_ok = True
                 activity = tracker.build_activity()
                 level = tracker.change_level(activity)
-                since = time.time() - last_send
-                # Discord 限制约 5 次 / 20 秒: 歌词更新至少间隔 LYRIC_INTERVAL 秒
-                if (level == 2 and since >= 1) or (level == 1 and since >= LYRIC_INTERVAL):
+                now = time.time()
+                while sent and now - sent[0] >= RATE_WINDOW:
+                    sent.popleft()
+                # Discord 限制 20 秒 5 次，超出的更新会被静默丢弃:
+                # 歌曲 / 播放状态变化用满额度；歌词更新至少间隔 LYRIC_INTERVAL 秒，
+                # 并且总给重要变化留 1 个名额。没发出去的变化下一轮会再次被检测到
+                if (level == 2 and len(sent) < RATE_MAX) or \
+                        (level == 1 and len(sent) < RATE_MAX - 1 and now - last_send >= LYRIC_INTERVAL):
                     ipc.set_activity(activity)
-                    last_send = time.time()
+                    last_send = now
+                    sent.append(now)
                     tracker.last_sent = activity
                     self.now_playing = f"{activity['details']} - {activity['state']}" if activity else ""
                     if level == 1:

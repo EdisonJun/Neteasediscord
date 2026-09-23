@@ -124,9 +124,7 @@ code {
   border-color: var(--line);
 }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; white-space: nowrap; }
-.brand svg { width: 26px; height: 26px; }
-.brand svg circle { fill: #e94646; }
-.brand svg ellipse, .brand svg path { fill: #fff; }
+.brand img { width: 26px; height: 26px; }
 .nav-links { display: flex; gap: 28px; margin-left: auto; font-size: 14px; color: var(--ink-2); }
 .nav-links a { transition: color 0.2s; }
 .nav-links a:hover { color: var(--ink); }
@@ -346,8 +344,9 @@ code {
 .tray li.on::before { content: "✓"; position: absolute; left: 10px; color: var(--ink-2); }
 .tray li:hover { background: rgba(255, 255, 255, 0.08); }
 .tray-icon {
-  position: absolute; right: -8px; bottom: -34px; width: 22px; height: 22px; border-radius: 50%;
-  background: #e94646; box-shadow: 0 0 0 6px rgba(233, 70, 70, 0.18);
+  position: absolute; right: -8px; bottom: -36px; width: 24px; height: 24px;
+  background: url("icon.png") center / contain no-repeat;
+  filter: drop-shadow(0 0 8px rgba(88, 101, 242, 0.5));
 }
 
 .tile h3, .tile p, .step h3, .step p { position: relative; z-index: 1; } /* 文字压在装饰数字上面 */

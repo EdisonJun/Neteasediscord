@@ -21,9 +21,14 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt pyinstaller
+        run: pip install -r requirements.txt -r requirements-build.txt
+
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
 
       - name: Build exe
+        env:
+          APP_VERSION: ${{ github.ref_name }}  # tag，例如 v1.2.0
         run: python build.py
 
       - name: Publish release
