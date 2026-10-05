@@ -133,6 +133,31 @@
   tickHero();
   setInterval(() => { heroT = (heroT + 3) % DURATION; tickHero(); }, 1000);
 
+  /* ---------------- 两个播放器轮流演示 ---------------- */
+  const PLAYERS = [
+    { name: "Netease Music", listen: "在网易云音乐中收听" },
+    { name: "QQ Music", listen: "在QQ音乐中收听" },
+  ];
+  const heroPlayer = heroCard.querySelector("[data-player]");
+  const heroListen = heroCard.querySelector("[data-listen]");
+  const playerPills = [...document.querySelectorAll("#playersDemo .player")];
+  const playersName = document.getElementById("playersName");
+  let playerIdx = 0;
+  function showPlayer(i) {
+    const p = PLAYERS[i];
+    heroCard.classList.add("swap");
+    setTimeout(() => {
+      heroPlayer.textContent = p.name;
+      heroListen.textContent = p.listen;
+      heroCard.classList.remove("swap");
+    }, 250);
+    playerPills.forEach((el, j) => el.classList.toggle("on", j === i));
+    if (playersName) playersName.textContent = p.name;
+  }
+  if (!reduceMotion) {
+    setInterval(() => { playerIdx = (playerIdx + 1) % PLAYERS.length; showPlayer(playerIdx); }, 5000);
+  }
+
   /* ---------------- 下载链接：指向带版本号的文件 ----------------
      每个版本的文件名不同 (NeteaseDiscordRPC-1.2.1.exe)，Windows 资源管理器就不会
      沿用下载文件夹里同名旧文件缓存的图标。查询失败时保留 HTML 里的固定链接 */

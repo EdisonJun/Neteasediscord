@@ -19,7 +19,7 @@ from app import make_icon  # noqa: E402
 W, H = 1200, 630
 TITLE = "网易云 Discord 状态"
 TAGLINE = "让好友听见你在听什么。"
-POINTS = "实时歌词 · 专辑封面 · 暂停与进度同步 · 免费开源"
+POINTS = "网易云音乐 / QQ 音乐 · 实时歌词 · 暂停与进度同步 · 免费开源"
 URL = "edisonjun.github.io/Neteasediscord"
 
 

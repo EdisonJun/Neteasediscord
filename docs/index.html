@@ -55,7 +55,7 @@
           </a>
           <a class="link" href="https://github.com/EdisonJun/Neteasediscord" target="_blank" rel="noopener">查看源代码 <span>›</span></a>
         </div>
-        <p class="meta reveal" style="--d:.32s">免费 · 开源 GPL-3.0 · Windows 10 / 11 · 无需安装 Python</p>
+        <p class="meta reveal" style="--d:.32s">支持网易云音乐 / QQ 音乐 · 免费开源 GPL-3.0 · Windows 10 / 11</p>
       </div>
 
       <div class="stage" aria-hidden="true">
@@ -64,7 +64,7 @@
         </div>
         <div class="card-float" data-speed="-0.1">
           <div class="dc-card" id="heroCard">
-            <div class="dc-head">正在收听 <b>NeteaseMusic</b><span class="dots">···</span></div>
+            <div class="dc-head">正在收听 <b data-player>Netease Music</b><span class="dots">···</span></div>
             <div class="dc-body">
               <div class="cover"></div>
               <div class="dc-info">
@@ -74,12 +74,12 @@
                 <div class="dc-bar"><span data-cur>00:14</span><div class="track"><i data-fill></i></div><span>02:21</span></div>
               </div>
             </div>
-            <div class="dc-btns"><span>在网易云音乐中收听</span><span>下载插件</span></div>
+            <div class="dc-btns"><span data-listen>在网易云音乐中收听</span><span>下载插件</span></div>
           </div>
         </div>
         <div class="chip chip-a" data-speed="-0.35">♪ 实时歌词</div>
         <div class="chip chip-b" data-speed="-0.22">⏸ 暂停同步</div>
-        <div class="chip chip-c" data-speed="-0.42">◉ 专辑封面</div>
+        <div class="chip chip-c" data-speed="-0.42">⇄ 网易云 / QQ 音乐</div>
       </div>
 
       <a class="scroll-hint" href="#lyrics" aria-label="向下滚动"><span></span></a>
@@ -115,7 +115,7 @@
           <h2 class="headline center"><span class="ln">拖动进度条？</span><span class="ln"><em>它跟得上。</em></span></h2>
           <div class="scrub-time" aria-hidden="true"><span id="scrubTime">00:00</span></div>
           <div class="dc-card dc-wide" aria-hidden="true">
-            <div class="dc-head">正在收听 <b>NeteaseMusic</b><span class="dots">···</span></div>
+            <div class="dc-head">正在收听 <b>Netease Music</b><span class="dots">···</span></div>
             <div class="dc-body">
               <div class="cover"></div>
               <div class="dc-info">
@@ -126,7 +126,7 @@
               </div>
             </div>
           </div>
-          <p class="body center narrow">开启「精确进度」后，程序直接读取网易云播放器自己的进度和播放状态。快进、倒退、暂停，Discord 上的进度条和歌词都会立刻跟上。</p>
+          <p class="body center narrow">快进、倒退、暂停，Discord 上的进度条和歌词都会立刻跟上。QQ 音乐开箱即用；网易云在托盘菜单里开启一次「精确进度」即可。</p>
         </div>
       </div>
     </section>
@@ -139,6 +139,19 @@
       </div>
 
       <div class="bento">
+        <article class="tile tile-players reveal">
+          <div class="tile-visual">
+            <div class="players" id="playersDemo">
+              <span class="player on" data-name="Netease Music">网易云音乐</span>
+              <span class="player-arrow" aria-hidden="true">⇄</span>
+              <span class="player" data-name="QQ Music">QQ 音乐</span>
+            </div>
+            <p class="players-status" aria-hidden="true">正在收听 <b id="playersName">Netease Music</b></p>
+          </div>
+          <h3><span class="nw">网易云、QQ 音乐，</span><span class="nw">都行。</span></h3>
+          <p>两个播放器都支持，状态标题会跟着显示 Netease Music 或 QQ Music。同时开着时显示正在播放的那个；都在放，就显示最近切歌的那个。</p>
+        </article>
+
         <article class="tile tile-pause reveal">
           <div class="tile-visual">
             <div class="mini-card" id="pauseCard">
@@ -156,7 +169,7 @@
             <span class="fake-btn">下载插件</span>
           </div>
           <h3>一键去听同一首。</h3>
-          <p>好友点一下按钮，就能在网易云打开这首歌；喜欢这个效果，还能顺手下载插件。</p>
+          <p>好友点一下按钮，就能在网易云或 QQ 音乐打开同一首歌；喜欢这个效果，还能顺手下载插件。</p>
         </article>
 
         <article class="tile tile-tray reveal" style="--d:.12s">
@@ -172,7 +185,7 @@
             </div>
           </div>
           <h3>住在托盘里。</h3>
-          <p>没有窗口，没有打扰。右键托盘图标，所有开关都在这里；也可以设为开机自启。</p>
+          <p>没有窗口，没有打扰。右键托盘图标，所有开关都在这里；可以开机自启，有新版本时也会提醒你。</p>
         </article>
 
         <article class="tile tile-light reveal" style="--d:.18s">
@@ -199,7 +212,7 @@
         <li class="step reveal">
           <span class="step-num" data-speed="-0.08" data-max="20">1</span>
           <h3>下载</h3>
-          <p>从 Release 页面下载 <code>NeteaseDiscordRPC.exe</code>，放进一个固定的文件夹。</p>
+          <p>点上面的下载按钮，把 exe 放进一个固定的文件夹（开机自启会记住这个位置）。</p>
         </li>
         <li class="step reveal" style="--d:.08s">
           <span class="step-num" data-speed="-0.14" data-max="20">2</span>
@@ -209,7 +222,7 @@
         <li class="step reveal" style="--d:.16s">
           <span class="step-num" data-speed="-0.2" data-max="20">3</span>
           <h3>播放</h3>
-          <p>在网易云音乐里放一首歌。完成了——好友已经能看到了。</p>
+          <p>在网易云音乐或 QQ 音乐里放一首歌。完成了——好友已经能看到了。</p>
         </li>
       </ol>
       <div class="start-cta reveal">
@@ -237,11 +250,15 @@
         </details>
         <details class="reveal">
           <summary>「精确进度」是什么？安全吗？</summary>
-          <p>在托盘菜单开启后，程序会给网易云的快捷方式加上本地调试端口，从而读取网易云自己的播放进度。端口只监听 127.0.0.1，局域网内的其他设备无法访问；但本机上的其他程序可以通过它控制网易云，请只在自己信任的电脑上开启。</p>
+          <p>只有网易云需要它，QQ 音乐会自己把进度告诉系统，不用设置。在托盘菜单开启后，程序会给网易云的快捷方式加上本地调试端口，从而读取网易云自己的播放进度。端口只监听 127.0.0.1，局域网内的其他设备无法访问；但本机上的其他程序可以通过它控制网易云，请只在自己信任的电脑上开启。</p>
         </details>
         <details class="reveal">
           <summary>会收集我的数据吗？</summary>
-          <p>不会。程序只会联系三个地方：把播放状态发给你本机的 Discord 客户端（由 Discord 展示给好友）；用歌曲 ID 向网易云的公开接口请求歌词（可以在菜单里关闭歌词）；启动时向 GitHub 查询有没有新版本（可以在配置文件里关闭）。</p>
+          <p>不会。程序只会做这几件事：把播放状态发给你本机的 Discord 客户端（由 Discord 展示给好友）；向网易云 / QQ 音乐的公开接口查询封面、歌曲链接和歌词（可以在菜单里关闭歌词）；启动时向 GitHub 查询有没有新版本（可以在配置文件里关闭）。</p>
+        </details>
+        <details class="reveal">
+          <summary>怎么更新到新版本？</summary>
+          <p>有新版本时托盘会提醒你。下载新的 exe 直接双击，如果旧版本还在运行，会问你要不要改用新的这个，点「是」就好。</p>
         </details>
         <details class="reveal">
           <summary>支持 macOS 或网页版吗？</summary>
@@ -268,7 +285,7 @@
 
   <footer class="footer">
     <p>网易云 Discord 状态 · 以 <a href="https://github.com/EdisonJun/Neteasediscord/blob/main/LICENSE" target="_blank" rel="noopener">GPL-3.0</a> 开源 · 由 <a href="https://github.com/EdisonJun" target="_blank" rel="noopener">EdisonJun</a> 制作</p>
-    <p class="fine">本项目为非官方的个人开源工具，与网易云音乐、Discord 官方没有任何关系。页面中的歌曲信息仅用于演示效果，歌词均为示意内容，不代表真实歌词；专辑封面为示意插画。</p>
+    <p class="fine">本项目为非官方的个人开源工具，与网易云音乐、QQ 音乐、Discord 官方没有任何关系。页面中的歌曲信息仅用于演示效果，歌词均为示意内容，不代表真实歌词；专辑封面为示意插画。</p>
   </footer>
 
   <script src="main.js"></script>
