@@ -8,6 +8,7 @@
   * 音频电平 (pycaw，后备): 网易云在混音器里的电平持续接近 0 即视为暂停
   * 歌词: music.163.com 公开歌词接口
   * 更新检查 (可关闭): api.github.com 上本项目的最新 Release
+  * QQ 音乐: 见 qqmusic.py (Windows 系统媒体控件 + QQ 音乐网页接口)
 """
 
 import collections
@@ -40,6 +41,9 @@ DEFAULT_CONFIG = {
     "show_download_button": True,
     "show_when_paused": False,
     "show_lyrics": True,
+    "enable_qqmusic": True,  # 同时支持 QQ 音乐 (通过 Windows 系统媒体控件)
+    "netease_name": "Netease Music",  # 状态卡片标题 "Listening to ..." 里显示的播放器名称
+    "qqmusic_name": "QQ Music",
     "pause_grace": 1.5,
     "cdp_port": 29222,  # 网易云的 --remote-debugging-port，0 表示不用
     "check_updates": True,  # 启动时向 GitHub 查询是否有新版本
@@ -376,10 +380,13 @@ class Lyrics:
         with urllib.request.urlopen(req, timeout=8) as r:
             return json.load(r)
 
+    def _lrc_text(self, song_id):
+        """返回这首歌的 LRC 歌词文本；子类可以换成别的音乐平台"""
+        return (self._download(song_id).get("lrc") or {}).get("lyric")
+
     def _fetch(self, song_id):
         try:
-            data = self._download(song_id)
-            lines = parse_lrc((data.get("lrc") or {}).get("lyric"))
+            lines = parse_lrc(self._lrc_text(song_id))
             log.debug("获取歌词 %s: %d 行", song_id, len(lines))
         except Exception as e:
             with self.lock:
@@ -446,12 +453,19 @@ class Tracker:
         self.elapsed = 0.0  # 当前歌曲已播放秒数 (只在有声音时累加)
         self.silence = 0.0  # 连续静音的秒数 (尚未计入 elapsed)
         self.last_tick = None
-        self.last_sent = None
+        self.last_sent = None  # change_level() 的比较基准 (测试用)
+        self.last_activity = None  # 上一次 build_activity() 的结果
+        self.playing = False
+
+    @property
+    def name(self):
+        return self.config["netease_name"]
 
     def build_activity(self):
         titles = netease_window_titles()
         if titles is None:
             self.song_key = None
+            self.playing = False
             return None
 
         now = time.time()
@@ -460,18 +474,22 @@ class Tracker:
             self.song_key = None  # 切回后备模式时重新估算
             info, playing, position = player["track"], player["playing"], player["position"]
             if position is None:
-                return self.last_sent
+                return self.last_activity  # 刚连上调试端口，进度下一轮才有
         else:
             result = self._estimate(titles, now)
             if result is None:
+                self.playing = False
                 return None
             info, playing, position = result
 
+        self.playing = playing
         if not playing and not self.config["show_when_paused"]:
+            self.last_activity = None
             return None
         if info["duration"]:
             position = min(max(position, 0), info["duration"])
-        return self._activity(info, playing, position, now)
+        self.last_activity = self._activity(info, playing, position, now)
+        return self.last_activity
 
     def _estimate(self, titles, now):
         """后备方案: 窗口标题 + 数据库开始时间 + 音频电平估算进度"""
@@ -517,58 +535,68 @@ class Tracker:
         return info, playing, self.elapsed + (self.silence if playing else 0)
 
     def _activity(self, info, playing, position, now):
-        lyric = self.lyrics.line_at(info["id"], position) if self.config["show_lyrics"] else ""
-        byline = " · ".join(x for x in (info["artists"], info["album"]) if x)
-
-        activity = {
-            "type": 2,  # Listening
-            "status_display_type": 2,  # 成员列表里显示 "正在听 <歌名>"
-            "details": _clip(info["name"]),
-            # 有歌词时: 第二行 "歌手 · 专辑"，第三行 (封面文字) 显示歌词
-            "state": _clip(byline if lyric else (info["artists"] or "未知歌手")),
-            "assets": {
-                "large_image": info["cover"] or "netease",
-                "large_text": _clip(("♪ " + lyric) if lyric else (info["album"] or info["name"])),
-            },
-        }
-        if playing and info["duration"]:
-            start = now - position
-            activity["timestamps"] = {
-                "start": int(start * 1000),
-                "end": int((start + info["duration"]) * 1000),
-            }
-        if not playing:
-            activity["state"] = _clip("⏸ 已暂停 · " + (info["artists"] or ""))
-            activity["assets"]["large_text"] = _clip(info["album"] or info["name"])
-        buttons = []  # Discord 最多 2 个按钮
-        if info["id"] and self.config["show_buttons"]:
-            buttons.append({"label": "在网易云音乐中收听",
-                            "url": f"https://music.163.com/song?id={info['id']}"})
-        if self.config["show_download_button"]:
-            buttons.append({"label": "下载插件", "url": DOWNLOAD_URL})
-        if buttons:
-            activity["buttons"] = buttons
-        return activity
+        return compose_activity(self.config, self.lyrics, self.config["netease_name"],
+                                info, playing, position, now)
 
     def change_level(self, activity):
-        """0: 无需推送; 1: 只有歌词变了 (可延后); 2: 歌曲/播放状态变了 (立即推送)"""
-        prev = self.last_sent
-        if not prev or not activity:
-            return 0 if prev == activity else 2
+        return change_level(self.last_sent, activity)
 
-        def core(a):
-            a = {k: v for k, v in a.items() if k not in ("timestamps", "state")}
-            a["assets"] = {k: v for k, v in a["assets"].items() if k != "large_text"}
-            return a
 
-        if core(prev) != core(activity) or ("timestamps" in prev) != ("timestamps" in activity):
-            return 2
-        if "timestamps" in activity and \
-                abs(activity["timestamps"]["start"] - prev["timestamps"]["start"]) > 3000:
-            return 2
-        if activity["state"] != prev["state"] or activity["assets"] != prev["assets"]:
-            return 1
-        return 0
+def compose_activity(config, lyrics, player_name, info, playing, position, now):
+    """把歌曲信息拼成 Discord 的 activity。info 里可选 "url" / "listen_label" 指定收听按钮"""
+    lyric = lyrics.line_at(info["id"], position) if config["show_lyrics"] else ""
+    byline = " · ".join(x for x in (info["artists"], info["album"]) if x)
+
+    activity = {
+        "type": 2,  # Listening
+        "name": player_name,  # 标题 "Listening to <name>"
+        "status_display_type": 2,  # 成员列表里显示 "正在听 <歌名>"
+        "details": _clip(info["name"]),
+        # 有歌词时: 第二行 "歌手 · 专辑"，第三行 (封面文字) 显示歌词
+        "state": _clip(byline if lyric else (info["artists"] or "未知歌手")),
+        "assets": {
+            "large_image": info["cover"] or "netease",
+            "large_text": _clip(("♪ " + lyric) if lyric else (info["album"] or info["name"])),
+        },
+    }
+    if playing and info["duration"]:
+        start = now - position
+        activity["timestamps"] = {
+            "start": int(start * 1000),
+            "end": int((start + info["duration"]) * 1000),
+        }
+    if not playing:
+        activity["state"] = _clip("⏸ 已暂停 · " + (info["artists"] or ""))
+        activity["assets"]["large_text"] = _clip(info["album"] or info["name"])
+    buttons = []  # Discord 最多 2 个按钮
+    url = info.get("url") or (f"https://music.163.com/song?id={info['id']}" if info["id"] else "")
+    if url and config["show_buttons"]:
+        buttons.append({"label": info.get("listen_label", "在网易云音乐中收听"), "url": url})
+    if config["show_download_button"]:
+        buttons.append({"label": "下载插件", "url": DOWNLOAD_URL})
+    if buttons:
+        activity["buttons"] = buttons
+    return activity
+
+
+def change_level(prev, activity):
+    """0: 无需推送; 1: 只有歌词变了 (可延后); 2: 歌曲/播放状态变了 (立即推送)"""
+    if not prev or not activity:
+        return 0 if prev == activity else 2
+
+    def core(a):
+        a = {k: v for k, v in a.items() if k not in ("timestamps", "state")}
+        a["assets"] = {k: v for k, v in a["assets"].items() if k != "large_text"}
+        return a
+
+    if core(prev) != core(activity) or ("timestamps" in prev) != ("timestamps" in activity):
+        return 2
+    if "timestamps" in activity and \
+            abs(activity["timestamps"]["start"] - prev["timestamps"]["start"]) > 3000:
+        return 2
+    if activity["state"] != prev["state"] or activity["assets"] != prev["assets"]:
+        return 1
+    return 0
 
 
 # --------------------------------------------------------------------------
@@ -610,11 +638,39 @@ class Presence:
 
     def __init__(self, cfg):
         self.cfg = cfg
-        self.tracker = Tracker(cfg)
+        self.tracker = Tracker(cfg)  # 网易云
+        self.sources = [self.tracker]
+        if cfg.get("enable_qqmusic", True):
+            import qqmusic  # 放在这里导入，避免循环引用
+            if qqmusic.SessionManager is not None:
+                self.sources.append(qqmusic.QQTracker(cfg))
         self.ipc = DiscordIPC(cfg["client_id"])
         self._stop = threading.Event()
         self.discord_ok = False
-        self.now_playing = ""  # 最近一次推送的 "歌名 - 歌手"，空表示没有状态
+        self.last_sent = None
+        self.now_playing = ""  # 最近一次推送的 "播放器 · 歌名 - 歌手"，空表示没有状态
+        self._seen = {}  # source -> (是否在播放, 歌名, 开始播放的时间, 最后一次在播放的时间)
+
+    def pick_activity(self):
+        """每个播放器各自生成状态，选出要显示的那个：
+        正在播放的优先；都在播放时选最近开始播放 (或切歌) 的；都没在播放时选最近播放过的"""
+        now = time.time()
+        best, best_key = None, None
+        for src in self.sources:
+            activity = src.build_activity()
+            was_playing, last_song, started, last_played = self._seen.get(src, (False, None, 0, 0))
+            song = activity and activity["details"]
+            if src.playing and (not was_playing or song != last_song):
+                started = now
+            if src.playing:
+                last_played = now
+            self._seen[src] = (src.playing, song, started, last_played)
+            if activity is None:
+                continue
+            key = (src.playing, started if src.playing else last_played)
+            if best_key is None or key > best_key:
+                best, best_key = (src, activity), key
+        return best or (None, None)
 
     @property
     def precise(self):
@@ -626,10 +682,10 @@ class Presence:
 
     def refresh(self):
         """配置改动后强制下一轮重新推送"""
-        self.tracker.last_sent = {}
+        self.last_sent = {}
 
     def run(self):
-        ipc, tracker = self.ipc, self.tracker
+        ipc = self.ipc
         last_send = 0.0
         sent = collections.deque()  # 最近 RATE_WINDOW 秒内的发送时间
         log.info("========== 网易云 Discord 状态同步已启动 ==========")
@@ -637,10 +693,10 @@ class Presence:
             try:
                 if not ipc.connected:
                     ipc.connect()
-                    tracker.last_sent = None
+                    self.last_sent = None
                 self.discord_ok = True
-                activity = tracker.build_activity()
-                level = tracker.change_level(activity)
+                source, activity = self.pick_activity()
+                level = change_level(self.last_sent, activity)
                 now = time.time()
                 while sent and now - sent[0] >= RATE_WINDOW:
                     sent.popleft()
@@ -652,14 +708,15 @@ class Presence:
                     ipc.set_activity(activity)
                     last_send = now
                     sent.append(now)
-                    tracker.last_sent = activity
-                    self.now_playing = f"{activity['details']} - {activity['state']}" if activity else ""
+                    self.last_sent = activity
+                    self.now_playing = (f"{source.name} · {activity['details']} - {activity['state']}"
+                                        if activity else "")
                     if level == 1:
                         log.debug("  %s", activity["assets"]["large_text"])
                     elif activity and "timestamps" not in activity:
                         log.info("⏸ 已暂停: %s", activity["details"])
                     elif activity:
-                        log.info("♪ %s - %s", activity["details"], activity["state"])
+                        log.info("♪ [%s] %s - %s", source.name, activity["details"], activity["state"])
                     else:
                         log.info("已清除状态")
             except (ConnectionError, OSError) as e:

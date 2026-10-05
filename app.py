@@ -159,7 +159,7 @@ class TrayApp:
         return "正在显示：" + (self.presence.now_playing[:40] or "无")
 
     def _status_mode(self):
-        return "进度：精确 (调试端口)" if self.presence.precise else "进度：估算 (未开启调试端口)"
+        return "网易云进度：精确 (调试端口)" if self.presence.precise else "网易云进度：估算 (未开启调试端口)"
 
     # ---- 动作 ----
     def _toggle_autostart(self, icon, item):

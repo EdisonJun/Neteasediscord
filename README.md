@@ -1,6 +1,6 @@
 # 网易云音乐 Discord 状态
 
-把你正在网易云音乐（Windows 客户端）里听的歌，显示成 Discord 的「正在收听」状态。
+把你正在**网易云音乐**或 **QQ 音乐**（Windows 客户端）里听的歌，显示成 Discord 的「正在收听」状态。
 
 **介绍页：<https://edisonjun.github.io/Neteasediscord/>** · **下载：[最新版本](../../releases/latest)**
 
@@ -20,7 +20,9 @@ Listening to NeteaseMusic
 - 显示「在网易云音乐中收听」和「下载插件」两个按钮，好友点击就能打开这首歌或本项目
 - 在托盘后台运行，可以开机自启，不需要安装 Python；有新版本时会在托盘提醒
 
-> 仅支持 **Windows** 和**网易云音乐 PC 客户端**（在 3.1.x 上测试通过）。本项目与网易云音乐、Discord 官方没有任何关系。
+> 仅支持 **Windows**，以及**网易云音乐 PC 客户端**（在 3.1.x 上测试通过）和 **QQ 音乐 PC 客户端**（在 22.x 上测试通过）。本项目与网易云音乐、QQ 音乐、Discord 官方没有任何关系。
+>
+> 两个播放器同时开着时，显示正在播放的那个；都在播放时，显示最近开始播放（或切歌）的那个。状态标题会显示成「Listening to Netease Music」或「Listening to QQ Music」。
 
 ## 下载与使用
 
@@ -77,11 +79,13 @@ Listening to NeteaseMusic
 | `poll_interval` | 检测间隔（秒） |
 | `pause_grace` | 估算模式下，静音持续多少秒判定为暂停 |
 | `check_updates` | 启动时是否向 GitHub 查询新版本，默认 `true` |
+| `enable_qqmusic` | 是否支持 QQ 音乐，默认 `true` |
+| `netease_name` / `qqmusic_name` | 状态标题「Listening to …」里显示的播放器名称，默认 `Netease Music` / `QQ Music` |
 
 修改后需要从托盘退出程序再重新打开。
 
 **会联网做什么？**
-只有三件事：把状态发给本机的 Discord 客户端；用歌曲 ID 向 `music.163.com` 请求歌词（可关闭歌词）；启动时向 `api.github.com` 查询有没有新版本（`check_updates` 设为 `false` 即可关闭）。
+只有这几件事：把状态发给本机的 Discord 客户端；用歌曲 ID 向 `music.163.com` 请求歌词（可关闭歌词）；放 QQ 音乐时，用歌名和歌手向 `y.qq.com` 搜索封面、歌曲链接和歌词；启动时向 `api.github.com` 查询有没有新版本（`check_updates` 设为 `false` 即可关闭）。
 
 ## 卸载
 
@@ -113,6 +117,7 @@ pip install -r requirements-build.txt && python build.py   # 打包到 dist/Nete
 | 歌曲信息、播放/暂停 | 开启调试端口后：通过 Chrome DevTools 协议，只读地查询网易云页面里的 redux store |
 | 播放进度 | 开启调试端口后：读取网易云进度条里隐藏的 `<input type=range>`，窗口最小化时也会更新 |
 | 后备方案 | 窗口标题（歌名 - 歌手）+ 本地数据库 `webdb.dat` 里的播放记录 + 网易云在音量合成器里的音频电平（持续接近 0 视为暂停） |
+| QQ 音乐 | 歌名、歌手、专辑、播放/暂停和进度来自 Windows 系统媒体控件 (SMTC)，不需要任何设置；封面、歌曲链接和歌词通过 QQ 音乐网页接口按「歌名 + 歌手 + 时长」搜索得到 |
 | 歌词 | 网易云公开歌词接口 `music.163.com/api/song/lyric` |
 | 推送到 Discord | 通过命名管道 `\\.\pipe\discord-ipc-N` 发送 `SET_ACTIVITY` 请求，状态类型为 Listening。受 Discord 频率限制（约每 20 秒 5 次），歌词最多每 4 秒更新一次 |
 

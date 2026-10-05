@@ -69,6 +69,12 @@ def main():
         "--hidden-import", "pystray._win32",
         "--collect-submodules", "comtypes",
         "--collect-submodules", "pycaw",
+        # QQ 音乐: Windows 系统媒体控件 (winrt 是命名空间包，需要显式列出)
+        "--hidden-import", "qqmusic",
+        "--hidden-import", "winrt.runtime",
+        "--hidden-import", "winrt.windows.foundation",
+        "--hidden-import", "winrt.windows.foundation.collections",
+        "--hidden-import", "winrt.windows.media.control",
         # 用不到的大依赖 (Pillow / comtypes 会顺带拉进来)
         "--exclude-module", "numpy", "--exclude-module", "setuptools",
         "--exclude-module", "tkinter", "--exclude-module", "pkg_resources",

@@ -4,3 +4,7 @@ psutil==7.1.3
 websocket-client==1.9.2
 pystray==0.19.5
 pillow==12.0.0
+winrt-runtime==3.2.1
+winrt-Windows.Foundation==3.2.1
+winrt-Windows.Foundation.Collections==3.2.1
+winrt-Windows.Media.Control==3.2.1
