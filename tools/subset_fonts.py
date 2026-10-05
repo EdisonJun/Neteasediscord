@@ -74,6 +74,10 @@ def main():
         f.write("\n".join(css_out) + "\n")
     print(f"{len(text)} chars, total {total // 1024} KB -> docs/fonts/, docs/fonts.css")
 
+    # 字体文件变了，顺便更新介绍页里 CSS / JS / 字体网址的缓存哈希
+    import bust_cache
+    bust_cache.main()
+
 
 if __name__ == "__main__":
     main()

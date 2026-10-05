@@ -133,7 +133,7 @@ pip install -r requirements-build.txt && python build.py   # 打包到 dist/Nete
 
 发布新版本：推送 `v*` 格式的 tag（例如 `git tag v1.3.0 && git push origin v1.3.0`）。GitHub Actions 会先跑测试，再把 tag 写进程序的版本号、打包 exe 并发布到 Releases，不需要手动改版本号。
 
-修改介绍页文字后，运行 `python tools/subset_fonts.py` 重新生成字体子集（只包含页面用到的字）。
+修改介绍页文字后，运行 `python tools/subset_fonts.py` 重新生成字体子集（只包含页面用到的字）；只改了 CSS / JS 时运行 `python tools/bust_cache.py`。两者都会给 `index.html` 里引用的 CSS / JS / 字体网址加上内容哈希，避免访客拿到新页面 + 旧缓存样式而错乱。
 
 ## 工作原理
 

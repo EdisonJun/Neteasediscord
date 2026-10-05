@@ -66,6 +66,30 @@
   const scrubFill = document.getElementById("scrubFill");
   const scrubLyric = document.getElementById("scrubLyric");
 
+  /* ---------------- 两个播放器：滚到一半切换 ---------------- */
+  const playersScene = document.getElementById("players");
+  const playersCard = document.getElementById("playersCard");
+  const PLAYER_DEMO = {
+    ne: { name: "Netease Music", title: "Stay", sub: "The Kid LAROI / Justin Bieber · Stay", lyric: "♪ Chorus",
+          cur: "00:47", dur: "02:21", fill: "33%", listen: "在网易云音乐中收听", cover: "" },
+    qq: { name: "QQ Music", title: "晚风来信", sub: "夜航乐团 · 晚风来信", lyric: "♪ Verse 1",
+          cur: "01:02", dur: "03:20", fill: "31%", listen: "在QQ音乐中收听", cover: "cover-qq" },
+  };
+  let activePlayer = "ne";
+  function setPlayer(key) {
+    activePlayer = key;
+    playersScene.dataset.active = key;
+    const d = PLAYER_DEMO[key];
+    const field = (k) => playersCard.querySelector(`[data-p="${k}"]`);
+    playersCard.classList.add("swap");
+    setTimeout(() => {
+      ["name", "title", "sub", "lyric", "cur", "dur", "listen"].forEach((k) => { field(k).textContent = d[k]; });
+      field("fill").style.width = d.fill;
+      field("cover").className = "cover " + d.cover;
+      playersCard.classList.remove("swap");
+    }, 250);
+  }
+
   function update() {
     const y = window.scrollY;
     const vh = window.innerHeight;
@@ -80,6 +104,10 @@
         el.style.transform = `translate3d(0, ${offset.toFixed(1)}px, 0)`;
       }
     }
+
+    // 两个播放器：前半段网易云，后半段 QQ 音乐
+    const pk = sceneProgress(playersScene) < 0.5 ? "ne" : "qq";
+    if (pk !== activePlayer) setPlayer(pk);
 
     // 歌词逐句点亮
     const lp = sceneProgress(lyricScene);
@@ -132,31 +160,6 @@
   // 演示用：进度 3 倍速走，让歌词更快轮换
   tickHero();
   setInterval(() => { heroT = (heroT + 3) % DURATION; tickHero(); }, 1000);
-
-  /* ---------------- 两个播放器轮流演示 ---------------- */
-  const PLAYERS = [
-    { name: "Netease Music", listen: "在网易云音乐中收听" },
-    { name: "QQ Music", listen: "在QQ音乐中收听" },
-  ];
-  const heroPlayer = heroCard.querySelector("[data-player]");
-  const heroListen = heroCard.querySelector("[data-listen]");
-  const playerPills = [...document.querySelectorAll("#playersDemo .player")];
-  const playersName = document.getElementById("playersName");
-  let playerIdx = 0;
-  function showPlayer(i) {
-    const p = PLAYERS[i];
-    heroCard.classList.add("swap");
-    setTimeout(() => {
-      heroPlayer.textContent = p.name;
-      heroListen.textContent = p.listen;
-      heroCard.classList.remove("swap");
-    }, 250);
-    playerPills.forEach((el, j) => el.classList.toggle("on", j === i));
-    if (playersName) playersName.textContent = p.name;
-  }
-  if (!reduceMotion) {
-    setInterval(() => { playerIdx = (playerIdx + 1) % PLAYERS.length; showPlayer(playerIdx); }, 5000);
-  }
 
   /* ---------------- 下载链接：指向带版本号的文件 ----------------
      每个版本的文件名不同 (NeteaseDiscordRPC-1.2.1.exe)，Windows 资源管理器就不会

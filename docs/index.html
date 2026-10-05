@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>网易云 Discord 状态 — 让好友听见你在听什么</title>
+  <title>网易云 / QQ 音乐 Discord 状态 — 让好友听见你在听什么</title>
   <meta name="description" content="一个安静运行在托盘里的 Windows 小工具，把网易云音乐或 QQ 音乐正在播放的歌曲、歌词和进度，实时同步成 Discord 的「正在收听」状态。免费开源。">
   <meta property="og:title" content="网易云 Discord 状态">
   <meta property="og:description" content="把网易云音乐或 QQ 音乐正在播放的歌，实时同步成 Discord 的「正在收听」状态。">
@@ -16,8 +16,8 @@
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="stylesheet" href="fonts.css">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="fonts.css?v=51f50e43">
+  <link rel="stylesheet" href="style.css?v=49421d4b">
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>
@@ -26,9 +26,10 @@
   <header class="nav" id="nav">
     <a class="brand" href="#top" aria-label="回到顶部">
       <img src="icon.png" alt="" width="26" height="26">
-      <span>网易云 Discord 状态</span>
+      <span>网易云 · QQ 音乐 <span class="brand-to">→ Discord</span></span>
     </a>
     <nav class="nav-links" aria-label="页面导航">
+      <a href="#players">播放器</a>
       <a href="#lyrics">歌词</a>
       <a href="#features">功能</a>
       <a href="#start">上手</a>
@@ -45,9 +46,13 @@
       <div class="glow glow-b" data-speed="-0.12" aria-hidden="true"></div>
 
       <div class="hero-copy">
-        <p class="eyebrow reveal">网易云音乐 · QQ 音乐 <span class="arrow">→</span> Discord</p>
+        <div class="platforms reveal">
+          <span class="plat plat-ne"><i></i>网易云音乐</span>
+          <span class="plat plat-qq"><i></i>QQ 音乐</span>
+          <span class="plat-to">→ Discord</span>
+        </div>
         <h1 class="display reveal" style="--d:.08s"><span class="ln">让好友听见</span><span class="ln">你在听什么。</span></h1>
-        <p class="lede reveal" style="--d:.16s">一个安静待在托盘里的小工具。你在网易云音乐或 QQ 音乐里放的每一首歌，都会实时变成 Discord 上的「正在收听」—— 连同封面、进度和正在唱的那一句。</p>
+        <p class="lede reveal" style="--d:.16s">一个安静待在托盘里的小工具。不管你用网易云音乐还是 QQ 音乐，放的每一首歌都会实时变成 Discord 上的「正在收听」—— 连同封面、进度和正在唱的那一句。</p>
         <div class="cta reveal" style="--d:.24s">
           <a class="pill" href="https://github.com/EdisonJun/Neteasediscord/releases/latest/download/NeteaseDiscordRPC.exe" data-download>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16"/></svg>
@@ -55,16 +60,31 @@
           </a>
           <a class="link" href="https://github.com/EdisonJun/Neteasediscord" target="_blank" rel="noopener">查看源代码 <span>›</span></a>
         </div>
-        <p class="meta reveal" style="--d:.32s">支持网易云音乐 / QQ 音乐 · 免费开源 GPL-3.0 · Windows 10 / 11</p>
+        <p class="meta reveal" style="--d:.32s">免费 · 开源 GPL-3.0 · Windows 10 / 11 · 无需安装 Python</p>
       </div>
 
       <div class="stage" aria-hidden="true">
         <div class="vinyl-wrap" data-speed="0.18">
           <div class="vinyl"><div class="vinyl-label"></div><div class="vinyl-sheen"></div></div>
         </div>
-        <div class="card-float" data-speed="-0.1">
-          <div class="dc-card" id="heroCard">
-            <div class="dc-head">正在收听 <b data-player>Netease Music</b><span class="dots">···</span></div>
+        <div class="card-float card-back" data-speed="-0.22" data-max="40">
+          <div class="dc-card dc-qq">
+            <div class="dc-head">正在收听 <b>QQ Music</b><span class="dots">···</span></div>
+            <div class="dc-body">
+              <div class="cover cover-qq"></div>
+              <div class="dc-info">
+                <div class="dc-title">晚风来信</div>
+                <div class="dc-sub">夜航乐团 · 晚风来信</div>
+                <div class="dc-lyric">♪ Verse 1</div>
+                <div class="dc-bar"><span>01:02</span><div class="track"><i style="width:31%"></i></div><span>03:20</span></div>
+              </div>
+            </div>
+            <div class="dc-btns"><span>在QQ音乐中收听</span><span>下载插件</span></div>
+          </div>
+        </div>
+        <div class="card-float card-front" data-speed="-0.1" data-max="40">
+          <div class="dc-card dc-ne" id="heroCard">
+            <div class="dc-head">正在收听 <b>Netease Music</b><span class="dots">···</span></div>
             <div class="dc-body">
               <div class="cover"></div>
               <div class="dc-info">
@@ -74,15 +94,49 @@
                 <div class="dc-bar"><span data-cur>00:14</span><div class="track"><i data-fill></i></div><span>02:21</span></div>
               </div>
             </div>
-            <div class="dc-btns"><span data-listen>在网易云音乐中收听</span><span>下载插件</span></div>
+            <div class="dc-btns"><span>在网易云音乐中收听</span><span>下载插件</span></div>
           </div>
         </div>
         <div class="chip chip-a" data-speed="-0.35">♪ 实时歌词</div>
         <div class="chip chip-b" data-speed="-0.22">⏸ 暂停同步</div>
-        <div class="chip chip-c" data-speed="-0.42">⇄ 网易云 / QQ 音乐</div>
       </div>
 
       <a class="scroll-hint" href="#lyrics" aria-label="向下滚动"><span></span></a>
+    </section>
+
+    <!-- ============ 两个播放器：滚动切换 ============ -->
+    <section class="scene scene-players" id="players" data-active="ne" style="--len:3">
+      <div class="sticky">
+        <div class="tint tint-ne" aria-hidden="true"></div>
+        <div class="tint tint-qq" aria-hidden="true"></div>
+        <div class="players-wrap">
+          <p class="eyebrow">两个播放器</p>
+          <h2 class="headline center"><span class="ln">网易云、QQ 音乐，</span><span class="ln"><em>放哪个都行。</em></span></h2>
+          <div class="switch" aria-hidden="true">
+            <span class="switch-thumb"></span>
+            <span class="sw sw-ne">网易云音乐</span>
+            <span class="sw sw-qq">QQ 音乐</span>
+          </div>
+          <div class="dc-card dc-wide" id="playersCard" aria-hidden="true">
+            <div class="dc-head">正在收听 <b data-p="name">Netease Music</b><span class="dots">···</span></div>
+            <div class="dc-body">
+              <div class="cover" data-p="cover"></div>
+              <div class="dc-info">
+                <div class="dc-title" data-p="title">Stay</div>
+                <div class="dc-sub" data-p="sub">The Kid LAROI / Justin Bieber · Stay</div>
+                <div class="dc-lyric" data-p="lyric">♪ Chorus</div>
+                <div class="dc-bar"><span data-p="cur">00:47</span><div class="track"><i data-p="fill" style="width:33%"></i></div><span data-p="dur">02:21</span></div>
+              </div>
+            </div>
+            <div class="dc-btns"><span data-p="listen">在网易云音乐中收听</span><span>下载插件</span></div>
+          </div>
+          <div class="compare">
+            <div class="cmp cmp-ne"><b>网易云音乐</b><span>在托盘菜单开启一次「精确进度」，拖动进度条也能同步</span></div>
+            <div class="cmp cmp-qq"><b>QQ 音乐</b><span>开箱即用，不需要任何设置</span></div>
+          </div>
+          <p class="players-note">两个都开着？显示正在播放的那个；都在放，就显示最近切歌的那个。</p>
+        </div>
+      </div>
     </section>
 
     <!-- ============ 歌词：滚动逐句点亮 ============ -->
@@ -139,19 +193,6 @@
       </div>
 
       <div class="bento">
-        <article class="tile tile-players reveal">
-          <div class="tile-visual">
-            <div class="players" id="playersDemo">
-              <span class="player on" data-name="Netease Music">网易云音乐</span>
-              <span class="player-arrow" aria-hidden="true">⇄</span>
-              <span class="player" data-name="QQ Music">QQ 音乐</span>
-            </div>
-            <p class="players-status" aria-hidden="true">正在收听 <b id="playersName">Netease Music</b></p>
-          </div>
-          <h3><span class="nw">网易云、QQ 音乐，</span><span class="nw">都行。</span></h3>
-          <p>两个播放器都支持，状态标题会跟着显示 Netease Music 或 QQ Music。同时开着时显示正在播放的那个；都在放，就显示最近切歌的那个。</p>
-        </article>
-
         <article class="tile tile-pause reveal">
           <div class="tile-visual">
             <div class="mini-card" id="pauseCard">
@@ -288,6 +329,6 @@
     <p class="fine">本项目为非官方的个人开源工具，与网易云音乐、QQ 音乐、Discord 官方没有任何关系。页面中的歌曲信息仅用于演示效果，歌词均为示意内容，不代表真实歌词；专辑封面为示意插画。</p>
   </footer>
 
-  <script src="main.js"></script>
+  <script src="main.js?v=c6d21f1a"></script>
 </body>
 </html>
